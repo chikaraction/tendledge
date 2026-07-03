@@ -52,11 +52,23 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   padding: 0.4rem 0.9rem;
   border-bottom: 1px solid var(--border);
   background: var(--bg-subtle);
   flex: none;
   user-select: none;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toolbar-actions {
+  flex: 1;
+  justify-content: center;
 }
 
 .app-name {
@@ -65,10 +77,51 @@ body {
   letter-spacing: 0.02em;
 }
 
+#filename {
+  font-size: 0.8rem;
+  color: var(--fg-muted);
+}
+
+#dirty-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: none;
+}
+
+#dirty-indicator.visible {
+  display: inline-block;
+}
+
+.toolbar-actions button {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.toolbar-actions button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.toolbar-sep {
+  width: 1px;
+  height: 1.1rem;
+  background: var(--border);
+  margin: 0 0.2rem;
+}
+
 #status {
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   color: var(--fg-muted);
+  white-space: nowrap;
 }
 
 #status.error {
@@ -252,4 +305,61 @@ body {
 .adoc #toc ul {
   list-style: none;
   padding-left: 1em;
+}
+
+/* ---------------------------------------------------------------------------
+   印刷 / PDF出力(window.print())
+--------------------------------------------------------------------------- */
+@media print {
+  :root {
+    /* ダークモードの配色が印刷に漏れないよう、印刷時は常にライト配色にする */
+    --bg: #ffffff;
+    --bg-subtle: #f6f6f4;
+    --fg: #1f1f1e;
+    --fg-muted: #6f6e69;
+    --border: #e2e1dd;
+    --accent: #2f6f5f;
+  }
+
+  #toolbar,
+  #divider,
+  #editor-pane {
+    display: none !important;
+  }
+
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+  }
+
+  #workspace {
+    display: block;
+  }
+
+  #preview-pane {
+    overflow: visible;
+    border-left: none;
+    width: auto;
+  }
+
+  .adoc {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .adoc .listingblock,
+  .adoc .admonitionblock,
+  .adoc table.tableblock,
+  .adoc .imageblock {
+    break-inside: avoid;
+  }
+
+  .adoc h1,
+  .adoc h2,
+  .adoc h3,
+  .adoc h4 {
+    break-after: avoid;
+  }
 }
