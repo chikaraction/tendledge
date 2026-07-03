@@ -16,6 +16,8 @@
     "@codemirror/state": "^6.4.0",
     "@codemirror/view": "^6.28.0",
     "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-fs": "^2.0.0",
     "codemirror": "^6.0.1"
   },
   "devDependencies": {

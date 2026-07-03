@@ -8,7 +8,20 @@
   </head>
   <body>
     <header id="toolbar">
-      <span class="app-name">AsciiDoc Editor</span>
+      <div class="toolbar-group toolbar-left">
+        <span class="app-name">AsciiDoc Editor</span>
+        <span id="filename" title="現在のファイル">Untitled</span>
+        <span id="dirty-indicator" aria-hidden="true"></span>
+      </div>
+      <div class="toolbar-group toolbar-actions">
+        <button id="btn-new" title="新規 (Ctrl+N)">新規</button>
+        <button id="btn-open" title="開く (Ctrl+O)">開く</button>
+        <button id="btn-save" title="保存 (Ctrl+S)">保存</button>
+        <button id="btn-save-as" title="名前を付けて保存 (Ctrl+Shift+S)">名前を付けて保存</button>
+        <span class="toolbar-sep" aria-hidden="true"></span>
+        <button id="btn-export-html" title="HTML としてエクスポート">HTML 出力</button>
+        <button id="btn-export-pdf" title="印刷 / PDF として保存 (Ctrl+P)">PDF / 印刷</button>
+      </div>
       <span id="status" title="変換にかかった時間"></span>
     </header>
     <main id="workspace">
