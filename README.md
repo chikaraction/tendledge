@@ -1,9 +1,10 @@
 # AsciiDoc Editor (Tauri + CodeMirror 6 + Asciidoctor.js)
 
-リアルタイムプレビュー付き AsciiDoc エディタの最小構成(マイルストーン 1〜3)。
+リアルタイムプレビュー付き AsciiDoc エディタの最小構成(マイルストーン 1〜4)。
 
 - 左右分割レイアウト(ディバイダをドラッグしてリサイズ可能)
-- CodeMirror 6 エディタ + 簡易 AsciiDoc ハイライト
+- CodeMirror 6 エディタ + AsciiDoc ハイライト(表セル、インラインマクロ、
+  ブロックのネストに対応)
 - Asciidoctor.js による 300ms デバウンス付きリアルタイム変換
 - ライト / ダークモード自動対応
 
@@ -41,13 +42,12 @@ npm run tauri dev
 | ファイル | 役割 |
 | --- | --- |
 | `src/main.ts` | エディタ生成、デバウンス付き変換、ペインリサイズ |
-| `src/asciidoc-mode.ts` | 簡易 AsciiDoc ハイライト(StreamLanguage) |
+| `src/asciidoc-mode.ts` | AsciiDoc ハイライト(StreamLanguage、ブロックスタックでネスト対応) |
 | `src/styles.css` | レイアウトとプレビューのスタイル |
 | `index.html` | 2 ペインの骨格 |
 
 ## 次のマイルストーン
 
-4. ハイライトの強化(テーブル内部、インラインマクロ、ネスト対応など)
 5. ファイルの開く / 保存(`@tauri-apps/plugin-fs` + `plugin-dialog`)、
    スクロール同期、HTML / PDF エクスポート
 
