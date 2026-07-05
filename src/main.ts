@@ -2,13 +2,15 @@
 // ロジックは core/(純粋関数)、DOM 操作は ui/、変換は render.ts に置く。
 import type { EditorState } from "@codemirror/state";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
+import { readDir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { createDocumentStore } from "./core/documents";
-import { suggestedExportName } from "./core/paths";
+import { basename, joinPath, suggestedExportName } from "./core/paths";
+import { buildVaultTree, type RawEntry } from "./core/vault-tree";
 import { convertToStandaloneHtml } from "./render";
 import { sampleDoc } from "./sample-doc";
 import { setupDivider } from "./ui/divider";
 import { createEditor } from "./ui/editor";
+import { createFileTree } from "./ui/file-tree";
 import { createPreview } from "./ui/preview";
 import { setupScrollSync } from "./ui/scroll-sync";
 import { setupShortcuts } from "./ui/shortcuts";
@@ -21,6 +23,8 @@ const previewEl = document.getElementById("preview")!;
 const previewPaneEl = document.getElementById("preview-pane")!;
 const statusEl = document.getElementById("status")!;
 const tabbarEl = document.getElementById("tabbar")!;
+const sidebarEl = document.getElementById("sidebar")!;
+const vaultNameEl = document.getElementById("vault-name")!;
 
 // ---------------------------------------------------------------------------
 // ドキュメント(タブ)状態とエディタ
@@ -60,6 +64,7 @@ function switchEditorTo(id: number, previousId?: number): void {
   view.setState(state);
   preview.render(view.state.doc.toString());
   updateTabs();
+  fileTree.setActivePath(doc.path);
   view.focus();
 }
 
@@ -84,6 +89,49 @@ async function closeTab(id: number): Promise<void> {
   } else {
     updateTabs();
   }
+}
+
+// ---------------------------------------------------------------------------
+// 保管庫(フォルダを開いてファイルツリーから編集対象を選ぶ)
+// ---------------------------------------------------------------------------
+let vaultPath: string | undefined;
+
+const fileTree = createFileTree(document.getElementById("file-tree")!, (path) => {
+  void openFileInTab(path);
+});
+
+/** readDir を再帰的に呼んでツリーの素材を集める(ドット始まりのフォルダには潜らない) */
+async function walkDir(path: string): Promise<RawEntry[]> {
+  const entries = await readDir(path);
+  return Promise.all(
+    entries.map(async (e): Promise<RawEntry> => {
+      if (e.isDirectory && !e.name.startsWith(".")) {
+        return {
+          name: e.name,
+          isDirectory: true,
+          children: await walkDir(joinPath(path, e.name)),
+        };
+      }
+      return { name: e.name, isDirectory: e.isDirectory };
+    }),
+  );
+}
+
+async function refreshVault(): Promise<void> {
+  if (!vaultPath) return;
+  const entries = await walkDir(vaultPath);
+  fileTree.setTree(buildVaultTree(vaultPath, entries));
+  fileTree.setActivePath(store.activeDoc().path);
+  vaultNameEl.textContent = basename(vaultPath);
+  vaultNameEl.title = vaultPath;
+  sidebarEl.hidden = false;
+}
+
+async function doOpenFolder(): Promise<void> {
+  const path = await open({ directory: true });
+  if (!path || Array.isArray(path)) return;
+  vaultPath = path;
+  await refreshVault();
 }
 
 // 初回描画(デバウンスなしで即時)
@@ -112,7 +160,7 @@ async function doOpen(): Promise<void> {
   await openFileInTab(path);
 }
 
-/** ファイルをタブとして開く */
+/** ファイルをタブとして開く(保管庫のファイルツリーからも使う) */
 async function openFileInTab(path: string): Promise<void> {
   const previousId = store.activeDoc().id;
   const content = await readTextFile(path);
@@ -171,6 +219,8 @@ function exportPdf(): void {
 // ---------------------------------------------------------------------------
 document.getElementById("btn-new")!.addEventListener("click", () => doNew());
 document.getElementById("btn-open")!.addEventListener("click", () => void doOpen());
+document.getElementById("btn-open-folder")!.addEventListener("click", () => void doOpenFolder());
+document.getElementById("btn-vault-refresh")!.addEventListener("click", () => void refreshVault());
 document.getElementById("btn-save")!.addEventListener("click", () => void doSave());
 document.getElementById("btn-save-as")!.addEventListener("click", () => void doSaveAs());
 document.getElementById("btn-export-html")!.addEventListener("click", () => void exportHtml());

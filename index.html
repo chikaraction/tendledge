@@ -14,6 +14,7 @@
       <div class="toolbar-group toolbar-actions">
         <button id="btn-new" title="新規 (Ctrl+N)">新規</button>
         <button id="btn-open" title="開く (Ctrl+O)">開く</button>
+        <button id="btn-open-folder" title="フォルダを保管庫として開く">フォルダを開く</button>
         <button id="btn-save" title="保存 (Ctrl+S)">保存</button>
         <button id="btn-save-as" title="名前を付けて保存 (Ctrl+Shift+S)">名前を付けて保存</button>
         <span class="toolbar-sep" aria-hidden="true"></span>
@@ -24,6 +25,13 @@
     </header>
     <nav id="tabbar" aria-label="開いているドキュメント"></nav>
     <main id="workspace">
+      <aside id="sidebar" hidden>
+        <div id="sidebar-header">
+          <span id="vault-name" title="保管庫"></span>
+          <button id="btn-vault-refresh" title="再読み込み">↻</button>
+        </div>
+        <div id="file-tree"></div>
+      </aside>
       <section id="editor-pane"></section>
       <div id="divider" role="separator" aria-orientation="vertical"></div>
       <section id="preview-pane">

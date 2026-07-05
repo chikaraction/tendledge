@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { basename, suggestedExportName } from "./paths";
+import { basename, joinPath, suggestedExportName } from "./paths";
+
+describe("joinPath: 親パスの区切り文字を継承して結合する", () => {
+  it("バックスラッシュ区切りの親にはバックスラッシュで結合する", () => {
+    expect(joinPath("C:\\vault", "memo.adoc")).toBe("C:\\vault\\memo.adoc");
+  });
+
+  it("スラッシュ区切りの親にはスラッシュで結合する", () => {
+    expect(joinPath("/home/user/vault", "memo.adoc")).toBe("/home/user/vault/memo.adoc");
+  });
+
+  it("親の末尾に区切り文字があっても二重にならない", () => {
+    expect(joinPath("C:\\vault\\", "memo.adoc")).toBe("C:\\vault\\memo.adoc");
+  });
+});
 
 describe("basename: パスからファイル名を取り出す", () => {
   it("Windows 形式のパス(バックスラッシュ区切り)からファイル名を返す", () => {

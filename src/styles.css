@@ -184,6 +184,108 @@ body {
   min-height: 0;
 }
 
+/* ---------------------------------------------------------------------------
+   サイドバー(保管庫のファイルツリー)
+--------------------------------------------------------------------------- */
+#sidebar {
+  flex: none;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-subtle);
+  border-right: 1px solid var(--border);
+  user-select: none;
+}
+
+#sidebar[hidden] {
+  display: none;
+}
+
+#sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.45rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+}
+
+#vault-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#btn-vault-refresh {
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 0.05rem 0.35rem;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+
+#btn-vault-refresh:hover {
+  background: var(--border);
+  color: var(--fg);
+}
+
+#file-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.4rem 0.3rem;
+  font-size: 0.8rem;
+}
+
+.tree-dir summary {
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--fg-muted);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-dir summary:hover {
+  background: var(--border);
+}
+
+.tree-children {
+  padding-left: 0.85rem;
+}
+
+.tree-file {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 0.15rem 0.4rem;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--fg);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-file:hover {
+  background: var(--border);
+}
+
+.tree-file.active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
 #editor-pane {
   width: var(--editor-ratio);
   min-width: 0;
@@ -370,6 +472,7 @@ body {
 
   #toolbar,
   #tabbar,
+  #sidebar,
   #divider,
   #editor-pane {
     display: none !important;

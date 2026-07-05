@@ -6,6 +6,13 @@ export function basename(path: string): string {
   return parts[parts.length - 1] || path;
 }
 
+/** 親パスの区切り文字(\ か /)を継承して子の名前を結合する。 */
+export function joinPath(parent: string, name: string): string {
+  const sep = parent.includes("\\") ? "\\" : "/";
+  const trimmed = parent.endsWith(sep) ? parent.slice(0, -1) : parent;
+  return `${trimmed}${sep}${name}`;
+}
+
 /** エクスポート時の既定ファイル名。元ファイルの拡張子を差し替える。 */
 export function suggestedExportName(path: string | undefined, ext: string): string {
   if (!path) return `untitled.${ext}`;
