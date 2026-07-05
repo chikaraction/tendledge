@@ -1,6 +1,7 @@
 // サイドバーのファイルツリー表示。
 // ツリーの構築ロジックは core/vault-tree.ts、ここは DOM 描画と展開状態の管理だけ。
 import type { VaultNode } from "../core/vault-tree";
+import { icon, icons } from "./icons";
 
 export interface FileTreeController {
   /** ツリーを差し替えて再描画する(保管庫を開いた / 再読込したとき) */
@@ -29,7 +30,14 @@ export function createFileTree(
       });
 
       const summary = document.createElement("summary");
-      summary.textContent = node.name;
+      const label = document.createElement("span");
+      label.className = "tree-label";
+      label.textContent = node.name;
+      summary.append(
+        icon(icons.chevron, 12, "tree-chevron"),
+        icon(icons.folder, 13, "tree-icon"),
+        label,
+      );
       details.appendChild(summary);
 
       const childrenEl = document.createElement("div");
@@ -44,7 +52,10 @@ export function createFileTree(
     const file = document.createElement("button");
     file.className = "tree-file";
     file.classList.toggle("active", node.path === activePath);
-    file.textContent = node.name;
+    const label = document.createElement("span");
+    label.className = "tree-label";
+    label.textContent = node.name;
+    file.append(icon(icons.file, 13, "tree-icon"), label);
     file.title = node.path;
     file.addEventListener("click", () => onOpenFile(node.path));
     return file;

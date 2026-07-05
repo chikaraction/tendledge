@@ -55,13 +55,15 @@ export interface SettingsDialogController {
 /**
  * 設定ダイアログを構築する。フィールドの変更は即時に onChange へ通知される
  * (OK ボタン待ちにしない)。onChange 側で適用 + 保存の両方を行う想定。
+ * getCurrent は「いま適用されている設定」を返すこと。メニューバーなど
+ * ダイアログ以外から設定が変わっても、開き直せば最新値が表示される。
  */
 export function createSettingsDialog(
   dialogEl: HTMLDialogElement,
-  current: Settings,
+  getCurrent: () => Settings,
   onChange: (settings: Settings) => void,
 ): SettingsDialogController {
-  let settings = { ...current };
+  let settings = { ...getCurrent() };
 
   dialogEl.innerHTML = "";
   dialogEl.className = "settings-dialog";
@@ -157,9 +159,8 @@ export function createSettingsDialog(
 
   return {
     open() {
-      // 開くたびに最新の設定値をフォームへ反映する。
-      // 注意: 構築時の current ではなく、変更を積み重ねた settings を使うこと。
-      // current に戻すと、前回の変更(例: テーマ)が次の change イベントで巻き戻る。
+      // 開くたびに「いま適用されている設定」をフォームへ反映する
+      settings = { ...getCurrent() };
       themeSelect.value = settings.theme;
       fontInput.value = String(settings.editorFontSize);
       debounceInput.value = String(settings.previewDebounceMs);

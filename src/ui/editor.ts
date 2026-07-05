@@ -18,6 +18,8 @@ export function createEditor(opts: {
   parent: HTMLElement;
   doc: string;
   onDocChanged: (doc: string) => void;
+  /** カーソル位置(1 始まりの行・列)が変わったとき(ステータスバー用) */
+  onCursorChanged?: (line: number, col: number) => void;
 }): EditorController {
   const extensions: Extension = [
     basicSetup,
@@ -27,6 +29,11 @@ export function createEditor(opts: {
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         opts.onDocChanged(update.state.doc.toString());
+      }
+      if (update.selectionSet || update.docChanged) {
+        const head = update.state.selection.main.head;
+        const line = update.state.doc.lineAt(head);
+        opts.onCursorChanged?.(line.number, head - line.from + 1);
       }
     }),
   ];
