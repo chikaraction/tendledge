@@ -1,274 +1,210 @@
-import { basicSetup, EditorView } from "codemirror";
-import { keymap } from "@codemirror/view";
-import { indentWithTab } from "@codemirror/commands";
-import { StreamLanguage } from "@codemirror/language";
-import Asciidoctor from "@asciidoctor/core";
+// 合成ルート: DOM の取得と各モジュールの接続だけを行う。
+// ロジックは core/(純粋関数)、DOM 操作は ui/、変換は render.ts に置く。
+import type { EditorState } from "@codemirror/state";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
-import { asciidocMode } from "./asciidoc-mode";
+import { readDir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
+import { createDocumentStore } from "./core/documents";
+import { basename, joinPath, suggestedExportName } from "./core/paths";
+import type { Settings } from "./core/settings";
+import { buildVaultTree, type RawEntry } from "./core/vault-tree";
+import { convertToStandaloneHtml } from "./render";
+import { sampleDoc } from "./sample-doc";
+import { setupDivider } from "./ui/divider";
+import { createEditor } from "./ui/editor";
+import { createFileTree } from "./ui/file-tree";
+import { createPreview } from "./ui/preview";
+import { setupScrollSync } from "./ui/scroll-sync";
+import { createSettingsDialog, loadSettings, saveSettings } from "./ui/settings-dialog";
+import { setupShortcuts } from "./ui/shortcuts";
+import { renderTabs } from "./ui/tabs";
 
 // ---------------------------------------------------------------------------
-// Asciidoctor.js のセットアップ(プロセッサは1回だけ生成する)
+// DOM 要素
 // ---------------------------------------------------------------------------
-const asciidoctor = Asciidoctor();
-
 const previewEl = document.getElementById("preview")!;
 const previewPaneEl = document.getElementById("preview-pane")!;
 const statusEl = document.getElementById("status")!;
-const filenameEl = document.getElementById("filename")!;
-const dirtyIndicatorEl = document.getElementById("dirty-indicator")!;
+const tabbarEl = document.getElementById("tabbar")!;
+const sidebarEl = document.getElementById("sidebar")!;
+const vaultNameEl = document.getElementById("vault-name")!;
 
 // ---------------------------------------------------------------------------
-// スクロール同期用: 見出し行(ソース)とプレビューの見出し要素を出現順で対応付ける。
-// Asciidoctor.js の sourcemap は内部AST止まりでHTMLに行番号を出力しないため、
-// 見出し単位のペアリング + 見出し間の線形補間で近似する。
+// ドキュメント(タブ)状態とエディタ
 // ---------------------------------------------------------------------------
-interface HeadingAnchor {
-  lineno: number;
-  el: HTMLElement;
-}
-let headingAnchors: HeadingAnchor[] = [];
+const store = createDocumentStore({ initialContent: sampleDoc });
 
-function rebuildHeadingAnchors(source: string): void {
-  const headingLines: number[] = [];
-  source.split("\n").forEach((line, i) => {
-    if (/^=+\s/.test(line)) headingLines.push(i + 1);
+// タブごとの EditorState(undo 履歴・カーソル位置を保持)。キーはドキュメント ID。
+const editorStates = new Map<number, EditorState>();
+
+const preview = createPreview({ previewEl, paneEl: previewPaneEl, statusEl });
+
+const editor = createEditor({
+  parent: document.getElementById("editor-pane")!,
+  doc: sampleDoc,
+  onDocChanged: (doc) => {
+    store.updateContent(store.activeDoc().id, doc);
+    preview.scheduleRender(doc);
+    updateTabs();
+  },
+});
+const view = editor.view;
+
+function updateTabs(): void {
+  renderTabs(tabbarEl, store.list(), store.activeDoc().id, store.isDirty, {
+    onActivate: activateTab,
+    onClose: (id) => void closeTab(id),
   });
-  const headingEls = Array.from(
-    previewEl.querySelectorAll<HTMLElement>("h1, h2, h3, h4, h5, h6"),
-  );
-  const n = Math.min(headingLines.length, headingEls.length);
-  headingAnchors = Array.from({ length: n }, (_, i) => ({
-    lineno: headingLines[i],
-    el: headingEls[i],
-  }));
 }
 
-function render(source: string): void {
-  const start = performance.now();
-  try {
-    const html = asciidoctor.convert(source, {
-      safe: "safe",
-      attributes: {
-        showtitle: true, // 文書タイトル(= 見出し)をプレビューに表示
-        sectnums: false,
-      },
-    }) as string;
-    previewEl.innerHTML = html;
-    rebuildHeadingAnchors(source);
-    statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;
-    statusEl.classList.remove("error");
-  } catch (err) {
-    // 変換エラーでも直前のプレビューは保持し、ステータスだけ知らせる
-    statusEl.textContent = "変換エラー";
-    statusEl.classList.add("error");
-    console.error(err);
+/** アクティブタブの EditorState を退避してから、指定タブの状態に切り替える */
+function switchEditorTo(id: number, previousId?: number): void {
+  if (previousId !== undefined && previousId !== id) {
+    editorStates.set(previousId, view.state);
+  }
+  const doc = store.list().find((d) => d.id === id)!;
+  const state = editorStates.get(id) ?? editor.newState(doc.content);
+  view.setState(state);
+  preview.render(view.state.doc.toString());
+  updateTabs();
+  fileTree.setActivePath(doc.path);
+  view.focus();
+}
+
+function activateTab(id: number): void {
+  const previousId = store.activeDoc().id;
+  if (id === previousId) return;
+  store.activate(id);
+  switchEditorTo(id, previousId);
+}
+
+async function closeTab(id: number): Promise<void> {
+  if (store.isDirty(id)) {
+    const ok = window.confirm("保存されていない変更があります。破棄してタブを閉じますか?");
+    if (!ok) return;
+  }
+  const previousId = store.activeDoc().id;
+  editorStates.delete(id);
+  store.close(id);
+  const nextActive = store.activeDoc().id;
+  if (previousId === id || nextActive !== previousId) {
+    switchEditorTo(nextActive);
+  } else {
+    updateTabs();
   }
 }
 
 // ---------------------------------------------------------------------------
-// デバウンス: 入力が止まってから 300ms 後に変換する
+// 保管庫(フォルダを開いてファイルツリーから編集対象を選ぶ)
 // ---------------------------------------------------------------------------
-const DEBOUNCE_MS = 300;
-let timer: ReturnType<typeof setTimeout> | undefined;
+let vaultPath: string | undefined;
 
-function scheduleRender(source: string): void {
-  clearTimeout(timer);
-  timer = setTimeout(() => render(source), DEBOUNCE_MS);
-}
-
-// ---------------------------------------------------------------------------
-// CodeMirror 6 エディタ
-// ---------------------------------------------------------------------------
-const initialDoc = `= はじめての AsciiDoc
-:author: あなたの名前
-
-== これは何?
-
-*AsciiDoc* のリアルタイムプレビュー付きエディタです。
-左側を編集すると、右側に _すぐ_ 反映されます。
-
-== 使える記法の例
-
-* 箇条書き
-* \`モノスペース\` や *太字*
-** ネストもできる
-
-. 番号付きリスト
-. 二番目
-
-[source,javascript]
-----
-// コードブロック
-const greet = (name) => \`Hello, \${name}!\`;
-----
-
-NOTE: アドモニション(注記ブロック)も使えます。
-
-TIP: 表やリンクなど、AsciiDoc の全機能が Asciidoctor.js で変換されます。
-
-|===
-| 列 A | 列 B
-
-| セル 1
-| セル 2
-|===
-`;
-
-// ---------------------------------------------------------------------------
-// ファイル状態(新規 / 開く / 保存)
-// ---------------------------------------------------------------------------
-let currentFilePath: string | undefined;
-let lastSavedContent = initialDoc;
-let isDirty = false;
-
-function basename(path: string): string {
-  const parts = path.split(/[\\/]/);
-  return parts[parts.length - 1] || path;
-}
-
-function updateFileIndicator(): void {
-  filenameEl.textContent = currentFilePath ? basename(currentFilePath) : "Untitled";
-}
-
-function updateDirtyState(doc: string): void {
-  isDirty = doc !== lastSavedContent;
-  dirtyIndicatorEl.classList.toggle("visible", isDirty);
-}
-
-const view = new EditorView({
-  doc: initialDoc,
-  parent: document.getElementById("editor-pane")!,
-  extensions: [
-    basicSetup,
-    keymap.of([indentWithTab]),
-    StreamLanguage.define(asciidocMode),
-    EditorView.lineWrapping,
-    EditorView.updateListener.of((update) => {
-      if (update.docChanged) {
-        const doc = update.state.doc.toString();
-        scheduleRender(doc);
-        updateDirtyState(doc);
-      }
-    }),
-  ],
+const fileTree = createFileTree(document.getElementById("file-tree")!, (path) => {
+  void openFileInTab(path);
 });
+
+/** readDir を再帰的に呼んでツリーの素材を集める(ドット始まりのフォルダには潜らない) */
+async function walkDir(path: string): Promise<RawEntry[]> {
+  const entries = await readDir(path);
+  return Promise.all(
+    entries.map(async (e): Promise<RawEntry> => {
+      if (e.isDirectory && !e.name.startsWith(".")) {
+        return {
+          name: e.name,
+          isDirectory: true,
+          children: await walkDir(joinPath(path, e.name)),
+        };
+      }
+      return { name: e.name, isDirectory: e.isDirectory };
+    }),
+  );
+}
+
+async function refreshVault(): Promise<void> {
+  if (!vaultPath) return;
+  const entries = await walkDir(vaultPath);
+  fileTree.setTree(buildVaultTree(vaultPath, entries));
+  fileTree.setActivePath(store.activeDoc().path);
+  vaultNameEl.textContent = basename(vaultPath);
+  vaultNameEl.title = vaultPath;
+  sidebarEl.hidden = false;
+}
+
+async function doOpenFolder(): Promise<void> {
+  const path = await open({ directory: true });
+  if (!path || Array.isArray(path)) return;
+  vaultPath = path;
+  await refreshVault();
+}
 
 // 初回描画(デバウンスなしで即時)
-render(view.state.doc.toString());
-updateFileIndicator();
+preview.render(view.state.doc.toString());
+updateTabs();
 view.focus();
 
-// ---------------------------------------------------------------------------
-// ペインのリサイズ(ディバイダのドラッグ)
-// ---------------------------------------------------------------------------
-const workspace = document.getElementById("workspace")!;
-const divider = document.getElementById("divider")!;
-
-divider.addEventListener("pointerdown", (e) => {
-  e.preventDefault();
-  divider.setPointerCapture(e.pointerId);
-
-  const onMove = (ev: PointerEvent) => {
-    const rect = workspace.getBoundingClientRect();
-    const ratio = Math.min(0.8, Math.max(0.2, (ev.clientX - rect.left) / rect.width));
-    workspace.style.setProperty("--editor-ratio", `${ratio * 100}%`);
-  };
-  const onUp = () => {
-    divider.removeEventListener("pointermove", onMove);
-    divider.removeEventListener("pointerup", onUp);
-  };
-  divider.addEventListener("pointermove", onMove);
-  divider.addEventListener("pointerup", onUp);
-});
+setupDivider(document.getElementById("workspace")!, document.getElementById("divider")!);
+setupScrollSync(view, preview);
 
 // ---------------------------------------------------------------------------
-// 新規 / 開く / 保存 / 名前を付けて保存
+// 新規 / 開く / 保存 / 名前を付けて保存(すべてタブ単位の操作)
 // ---------------------------------------------------------------------------
-function confirmDiscardIfDirty(): boolean {
-  if (!isDirty) return true;
-  return window.confirm("保存されていない変更があります。破棄して続行しますか?");
-}
-
-function setDoc(content: string): void {
-  view.dispatch({
-    changes: { from: 0, to: view.state.doc.length, insert: content },
-  });
-}
-
-async function doNew(): Promise<void> {
-  if (!confirmDiscardIfDirty()) return;
-  setDoc("");
-  currentFilePath = undefined;
-  lastSavedContent = "";
-  updateDirtyState("");
-  updateFileIndicator();
+function doNew(): void {
+  const previousId = store.activeDoc().id;
+  const doc = store.openUntitled();
+  switchEditorTo(doc.id, previousId);
 }
 
 async function doOpen(): Promise<void> {
-  if (!confirmDiscardIfDirty()) return;
   const path = await open({
     multiple: false,
     filters: [{ name: "AsciiDoc", extensions: ["adoc", "asciidoc", "asc", "txt"] }],
   });
   if (!path || Array.isArray(path)) return;
+  await openFileInTab(path);
+}
+
+/** ファイルをタブとして開く(保管庫のファイルツリーからも使う) */
+async function openFileInTab(path: string): Promise<void> {
+  const previousId = store.activeDoc().id;
   const content = await readTextFile(path);
-  setDoc(content);
-  currentFilePath = path;
-  lastSavedContent = content;
-  updateDirtyState(content);
-  updateFileIndicator();
+  const { doc, alreadyOpen } = store.openFile(path, content);
+  if (alreadyOpen && doc.id === previousId) return;
+  // 既存タブなら編集中の内容(EditorState)をそのまま活かす
+  switchEditorTo(doc.id, previousId);
 }
 
 async function doSave(): Promise<void> {
-  if (!currentFilePath) {
+  const active = store.activeDoc();
+  if (!active.path) {
     await doSaveAs();
     return;
   }
   const doc = view.state.doc.toString();
-  await writeTextFile(currentFilePath, doc);
-  lastSavedContent = doc;
-  updateDirtyState(doc);
+  await writeTextFile(active.path, doc);
+  store.markSaved(active.id, doc);
+  updateTabs();
 }
 
 async function doSaveAs(): Promise<void> {
+  const active = store.activeDoc();
   const doc = view.state.doc.toString();
   const path = await save({
     filters: [{ name: "AsciiDoc", extensions: ["adoc"] }],
-    defaultPath: currentFilePath,
+    defaultPath: active.path,
   });
   if (!path) return;
   await writeTextFile(path, doc);
-  currentFilePath = path;
-  lastSavedContent = doc;
-  updateDirtyState(doc);
-  updateFileIndicator();
+  store.markSaved(active.id, doc, path);
+  updateTabs();
 }
-
-document.getElementById("btn-new")!.addEventListener("click", () => void doNew());
-document.getElementById("btn-open")!.addEventListener("click", () => void doOpen());
-document.getElementById("btn-save")!.addEventListener("click", () => void doSave());
-document.getElementById("btn-save-as")!.addEventListener("click", () => void doSaveAs());
 
 // ---------------------------------------------------------------------------
 // HTML / PDF エクスポート
 // ---------------------------------------------------------------------------
-function suggestedExportName(path: string | undefined, ext: string): string {
-  if (!path) return `untitled.${ext}`;
-  const base = basename(path).replace(/\.[^.]+$/, "");
-  return `${base}.${ext}`;
-}
-
 async function exportHtml(): Promise<void> {
-  const doc = view.state.doc.toString();
-  const html = asciidoctor.convert(doc, {
-    safe: "safe",
-    standalone: true,
-    attributes: { showtitle: true, sectnums: false },
-  }) as string;
+  const html = convertToStandaloneHtml(view.state.doc.toString());
   const path = await save({
     filters: [{ name: "HTML", extensions: ["html"] }],
-    defaultPath: suggestedExportName(currentFilePath, "html"),
+    defaultPath: suggestedExportName(store.activeDoc().path, "html"),
   });
   if (!path) return;
   await writeTextFile(path, html);
@@ -280,128 +216,61 @@ function exportPdf(): void {
   window.print();
 }
 
+// ---------------------------------------------------------------------------
+// 設定(テーマ・エディタのフォントサイズ・プレビューのデバウンス)
+// ---------------------------------------------------------------------------
+/** 設定を DOM/プレビューへ適用する(見た目・挙動の反映のみ。保存はしない) */
+function applySettings(settings: Settings): void {
+  if (settings.theme === "system") {
+    document.documentElement.removeAttribute("data-theme");
+  } else {
+    document.documentElement.setAttribute("data-theme", settings.theme);
+  }
+  document.documentElement.style.setProperty("--editor-font-size", `${settings.editorFontSize}px`);
+  preview.setDebounceMs(settings.previewDebounceMs);
+}
+
+async function initSettings(): Promise<void> {
+  const settings = await loadSettings();
+  applySettings(settings);
+
+  const dialog = createSettingsDialog(
+    document.getElementById("settings-dialog") as HTMLDialogElement,
+    settings,
+    (next) => {
+      applySettings(next);
+      void saveSettings(next);
+    },
+  );
+
+  document.getElementById("btn-settings")!.addEventListener("click", () => dialog.open());
+}
+
+void initSettings();
+
+// ---------------------------------------------------------------------------
+// ツールバーとショートカット
+// ---------------------------------------------------------------------------
+document.getElementById("btn-new")!.addEventListener("click", () => doNew());
+document.getElementById("btn-open")!.addEventListener("click", () => void doOpen());
+document.getElementById("btn-open-folder")!.addEventListener("click", () => void doOpenFolder());
+document.getElementById("btn-vault-refresh")!.addEventListener("click", () => void refreshVault());
+document.getElementById("btn-save")!.addEventListener("click", () => void doSave());
+document.getElementById("btn-save-as")!.addEventListener("click", () => void doSaveAs());
 document.getElementById("btn-export-html")!.addEventListener("click", () => void exportHtml());
 document.getElementById("btn-export-pdf")!.addEventListener("click", () => exportPdf());
 
-// ---------------------------------------------------------------------------
-// キーボードショートカット
-// ---------------------------------------------------------------------------
-window.addEventListener("keydown", (e) => {
-  if (!e.ctrlKey) return;
-  const key = e.key.toLowerCase();
-  if (key === "n") {
-    e.preventDefault();
-    void doNew();
-  } else if (key === "o") {
-    e.preventDefault();
-    void doOpen();
-  } else if (key === "s" && e.shiftKey) {
-    e.preventDefault();
-    void doSaveAs();
-  } else if (key === "s") {
-    e.preventDefault();
-    void doSave();
-  } else if (key === "p") {
-    e.preventDefault();
-    exportPdf();
-  }
-});
-
-// ---------------------------------------------------------------------------
-// スクロール同期(エディタ ⇔ プレビュー、見出しアンカー + 線形補間)
-// ---------------------------------------------------------------------------
-function previewOffsetOf(el: HTMLElement): number {
-  const paneRect = previewPaneEl.getBoundingClientRect();
-  return el.getBoundingClientRect().top - paneRect.top + previewPaneEl.scrollTop;
-}
-
-function previewScrollTopForLine(lineno: number, totalLines: number): number {
-  const maxScroll = Math.max(0, previewPaneEl.scrollHeight - previewPaneEl.clientHeight);
-  if (headingAnchors.length === 0) {
-    return totalLines <= 1 ? 0 : (maxScroll * (lineno - 1)) / (totalLines - 1);
-  }
-  const first = headingAnchors[0];
-  if (lineno <= first.lineno) {
-    const frac = first.lineno <= 1 ? 0 : lineno / first.lineno;
-    return previewOffsetOf(first.el) * frac;
-  }
-  for (let i = 0; i < headingAnchors.length - 1; i++) {
-    const a = headingAnchors[i];
-    const b = headingAnchors[i + 1];
-    if (lineno >= a.lineno && lineno <= b.lineno) {
-      const frac = (lineno - a.lineno) / (b.lineno - a.lineno || 1);
-      return previewOffsetOf(a.el) + frac * (previewOffsetOf(b.el) - previewOffsetOf(a.el));
-    }
-  }
-  const last = headingAnchors[headingAnchors.length - 1];
-  const lastOffset = previewOffsetOf(last.el);
-  const remainingFrac = totalLines <= last.lineno ? 0 : (lineno - last.lineno) / (totalLines - last.lineno);
-  return lastOffset + remainingFrac * (maxScroll - lastOffset);
-}
-
-function editorLineForPreviewScrollTop(scrollTop: number, totalLines: number): number {
-  const maxScroll = Math.max(0, previewPaneEl.scrollHeight - previewPaneEl.clientHeight);
-  if (headingAnchors.length === 0) {
-    if (maxScroll <= 0) return 1;
-    return Math.round(1 + (scrollTop / maxScroll) * (totalLines - 1));
-  }
-  const first = headingAnchors[0];
-  const firstOffset = previewOffsetOf(first.el);
-  if (scrollTop <= firstOffset) {
-    const frac = firstOffset <= 0 ? 0 : scrollTop / firstOffset;
-    return Math.round(frac * first.lineno);
-  }
-  for (let i = 0; i < headingAnchors.length - 1; i++) {
-    const a = headingAnchors[i];
-    const b = headingAnchors[i + 1];
-    const aOff = previewOffsetOf(a.el);
-    const bOff = previewOffsetOf(b.el);
-    if (scrollTop >= aOff && scrollTop <= bOff) {
-      const frac = (scrollTop - aOff) / (bOff - aOff || 1);
-      return Math.round(a.lineno + frac * (b.lineno - a.lineno));
-    }
-  }
-  const last = headingAnchors[headingAnchors.length - 1];
-  const lastOffset = previewOffsetOf(last.el);
-  const remainingFrac = maxScroll <= lastOffset ? 0 : (scrollTop - lastOffset) / (maxScroll - lastOffset);
-  return Math.round(last.lineno + remainingFrac * (totalLines - last.lineno));
-}
-
-function editorTopLine(): number {
-  const rect = view.scrollDOM.getBoundingClientRect();
-  const pos = view.posAtCoords({ x: rect.left + 4, y: rect.top + 4 }) ?? 0;
-  return view.state.doc.lineAt(pos).number;
-}
-
-function editorScrollToLine(lineno: number): void {
-  const line = view.state.doc.line(Math.min(Math.max(lineno, 1), view.state.doc.lines));
-  view.dispatch({ effects: EditorView.scrollIntoView(line.from, { y: "start" }) });
-}
-
-let syncingScroll = false;
-function withScrollGuard(fn: () => void): void {
-  if (syncingScroll) return;
-  syncingScroll = true;
-  fn();
-  const release = () => {
-    syncingScroll = false;
-  };
-  // requestAnimationFrame が主経路。非表示タブ等で rAF が発火しない場合に
-  // ガードが解除されず同期が止まったままにならないよう setTimeout で保険をかける。
-  requestAnimationFrame(release);
-  setTimeout(release, 100);
-}
-
-view.scrollDOM.addEventListener("scroll", () => {
-  withScrollGuard(() => {
-    const target = previewScrollTopForLine(editorTopLine(), view.state.doc.lines);
-    previewPaneEl.scrollTop = target;
-  });
-});
-
-previewPaneEl.addEventListener("scroll", () => {
-  withScrollGuard(() => {
-    const lineno = editorLineForPreviewScrollTop(previewPaneEl.scrollTop, view.state.doc.lines);
-    editorScrollToLine(lineno);
-  });
+setupShortcuts({
+  onNew: doNew,
+  onOpen: () => void doOpen(),
+  onSave: () => void doSave(),
+  onSaveAs: () => void doSaveAs(),
+  onPrint: exportPdf,
+  onCloseTab: () => void closeTab(store.activeDoc().id),
+  onNextTab: () => {
+    const previousId = store.activeDoc().id;
+    store.activateNext();
+    const nextId = store.activeDoc().id;
+    if (nextId !== previousId) switchEditorTo(nextId, previousId);
+  },
 });

@@ -1,16 +1,25 @@
 # AsciiDoc Editor (Tauri + CodeMirror 6 + Asciidoctor.js)
 
-リアルタイムプレビュー付き AsciiDoc エディタ(マイルストーン 1〜5、ロードマップ完了)。
+リアルタイムプレビュー付き AsciiDoc エディタ(マイルストーン 1〜6 実装済み)。
 
 - 左右分割レイアウト(ディバイダをドラッグしてリサイズ可能)
 - CodeMirror 6 エディタ + AsciiDoc ハイライト(表セル、インラインマクロ、
   ブロックのネストに対応)
-- Asciidoctor.js による 300ms デバウンス付きリアルタイム変換
-- ライト / ダークモード自動対応
+- Asciidoctor.js によるデバウンス付きリアルタイム変換(デバウンス時間は設定で変更可)
+- ライト / ダークモード(設定で固定も、OS 追従も可能)
 - ファイルの新規 / 開く / 保存 / 名前を付けて保存(`@tauri-apps/plugin-fs` +
   `plugin-dialog`、キーボードショートカット Ctrl+N/O/S/Shift+S 対応)
+- **タブ**: 複数ドキュメントの同時オープン(Ctrl+W で閉じる、Ctrl+Tab で切替。
+  undo 履歴・カーソル位置はタブごとに保持)
+- **保管庫**: フォルダを開いてサイドバーのファイルツリーから編集対象を選択
+  (対応拡張子: adoc / asciidoc / asc / txt)
+- **設定画面**: テーマ・エディタのフォントサイズ・プレビューのデバウンスを
+  変更でき、`tauri-plugin-store` で永続化
 - エディタとプレビューのスクロール同期(見出し単位でペアリングし、見出し間は補間)
 - HTML エクスポート、PDF / 印刷(`window.print()`、OS の印刷ダイアログ経由)
+- プレビューは DOMPurify でサニタイズ(保管庫で第三者のファイルを開いても
+  スクリプトを実行させない)+ CSP 設定済み
+- Vitest によるユニットテスト(`npm test`。純粋ロジックは `src/core/` に分離)
 
 ## 前提
 
@@ -45,10 +54,14 @@ npm run tauri dev
 
 | ファイル | 役割 |
 | --- | --- |
-| `src/main.ts` | エディタ生成、デバウンス付き変換、ペインリサイズ、ファイルI/O、スクロール同期、エクスポート |
+| `src/main.ts` | 合成ルート(DOM 取得と各モジュールの接続、ファイル I/O・保管庫・設定の配線) |
+| `src/core/` | 純粋ロジック(タブ状態、ツリー構築、スクロール補間、設定スキーマ等)。テストは同ディレクトリに併置 |
+| `src/ui/` | DOM 接続層(エディタ、プレビュー、タブバー、ファイルツリー、設定ダイアログ等) |
+| `src/render.ts` | Asciidoctor.js 変換 + DOMPurify サニタイズ |
 | `src/asciidoc-mode.ts` | AsciiDoc ハイライト(StreamLanguage、ブロックスタックでネスト対応) |
-| `src/styles.css` | レイアウトとプレビューのスタイル、印刷用 `@media print` |
-| `index.html` | 2 ペイン + ツールバーの骨格 |
+| `src/styles.css` | レイアウトとプレビューのスタイル、テーマ変数、印刷用 `@media print` |
+| `index.html` | ツールバー + タブバー + サイドバー + 2 ペインの骨格 |
+| `docs/milestone-6-plan.md` | マイルストーン 6 の設計文書 |
 
 ## メモ
 
