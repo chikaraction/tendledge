@@ -5,16 +5,22 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { readDir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { createDocumentStore } from "./core/documents";
 import { basename, joinPath, suggestedExportName } from "./core/paths";
-import type { Settings } from "./core/settings";
+import { DEFAULT_SETTINGS, type Settings, type Theme } from "./core/settings";
 import { buildVaultTree, type RawEntry } from "./core/vault-tree";
 import { convertToStandaloneHtml } from "./render";
 import { sampleDoc } from "./sample-doc";
 import { setupDivider } from "./ui/divider";
 import { createEditor } from "./ui/editor";
 import { createFileTree } from "./ui/file-tree";
+import { createMenubar } from "./ui/menubar";
 import { createPreview } from "./ui/preview";
 import { setupScrollSync } from "./ui/scroll-sync";
-import { createSettingsDialog, loadSettings, saveSettings } from "./ui/settings-dialog";
+import {
+  createSettingsDialog,
+  loadSettings,
+  saveSettings,
+  type SettingsDialogController,
+} from "./ui/settings-dialog";
 import { setupShortcuts } from "./ui/shortcuts";
 import { createStatusbar } from "./ui/statusbar";
 import { renderTabs } from "./ui/tabs";
@@ -239,6 +245,11 @@ function exportPdf(): void {
 // ---------------------------------------------------------------------------
 // 設定(テーマ・エディタのフォントサイズ・プレビューのデバウンス)
 // ---------------------------------------------------------------------------
+// 「いま適用されている設定」の唯一の置き場。ダイアログとメニューバーの両方から
+// updateSettings() 経由で更新される。
+let currentSettings: Settings = { ...DEFAULT_SETTINGS };
+let settingsDialog: SettingsDialogController | undefined;
+
 /** 設定を DOM/プレビューへ適用する(見た目・挙動の反映のみ。保存はしない) */
 function applySettings(settings: Settings): void {
   if (settings.theme === "system") {
@@ -250,35 +261,82 @@ function applySettings(settings: Settings): void {
   preview.setDebounceMs(settings.previewDebounceMs);
 }
 
-async function initSettings(): Promise<void> {
-  const settings = await loadSettings();
-  applySettings(settings);
-
-  const dialog = createSettingsDialog(
-    document.getElementById("settings-dialog") as HTMLDialogElement,
-    settings,
-    (next) => {
-      applySettings(next);
-      void saveSettings(next);
-    },
-  );
-
-  document.getElementById("btn-settings")!.addEventListener("click", () => dialog.open());
+function updateSettings(next: Settings): void {
+  currentSettings = next;
+  applySettings(next);
+  void saveSettings(next);
+  menubar.refresh(); // テーマのチェックマーク表示を追従させる
 }
+
+function setTheme(theme: Theme): void {
+  updateSettings({ ...currentSettings, theme });
+}
+
+async function initSettings(): Promise<void> {
+  currentSettings = await loadSettings();
+  applySettings(currentSettings);
+  settingsDialog = createSettingsDialog(
+    document.getElementById("settings-dialog") as HTMLDialogElement,
+    () => currentSettings,
+    updateSettings,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// メニューバーとショートカット
+// ---------------------------------------------------------------------------
+const menubar = createMenubar(document.getElementById("menubar")!, [
+  {
+    id: "file",
+    label: "ファイル",
+    entries: [
+      { label: "新規", shortcut: "Ctrl+N", onSelect: doNew },
+      { label: "開く...", shortcut: "Ctrl+O", onSelect: () => void doOpen() },
+      { label: "フォルダを開く...", onSelect: () => void doOpenFolder() },
+      "separator",
+      { label: "保存", shortcut: "Ctrl+S", onSelect: () => void doSave() },
+      { label: "名前を付けて保存...", shortcut: "Ctrl+Shift+S", onSelect: () => void doSaveAs() },
+      "separator",
+      { label: "HTML としてエクスポート...", onSelect: () => void exportHtml() },
+      { label: "PDF / 印刷...", shortcut: "Ctrl+P", onSelect: exportPdf },
+      "separator",
+      { label: "設定...", onSelect: () => settingsDialog?.open() },
+    ],
+  },
+  {
+    id: "view",
+    label: "表示",
+    entries: [
+      {
+        label: "サイドバー",
+        checked: () => !sidebarEl.hidden,
+        onSelect: () => {
+          sidebarEl.hidden = !sidebarEl.hidden;
+        },
+      },
+      "separator",
+      {
+        label: "テーマ: システムに合わせる",
+        checked: () => currentSettings.theme === "system",
+        onSelect: () => setTheme("system"),
+      },
+      {
+        label: "テーマ: ライト",
+        checked: () => currentSettings.theme === "light",
+        onSelect: () => setTheme("light"),
+      },
+      {
+        label: "テーマ: ダーク",
+        checked: () => currentSettings.theme === "dark",
+        onSelect: () => setTheme("dark"),
+      },
+    ],
+  },
+]);
 
 void initSettings();
 
-// ---------------------------------------------------------------------------
-// ツールバーとショートカット
-// ---------------------------------------------------------------------------
-document.getElementById("btn-new")!.addEventListener("click", () => doNew());
-document.getElementById("btn-open")!.addEventListener("click", () => void doOpen());
-document.getElementById("btn-open-folder")!.addEventListener("click", () => void doOpenFolder());
 document.getElementById("btn-vault-refresh")!.addEventListener("click", () => void refreshVault());
-document.getElementById("btn-save")!.addEventListener("click", () => void doSave());
-document.getElementById("btn-save-as")!.addEventListener("click", () => void doSaveAs());
-document.getElementById("btn-export-html")!.addEventListener("click", () => void exportHtml());
-document.getElementById("btn-export-pdf")!.addEventListener("click", () => exportPdf());
 
 setupShortcuts({
   onNew: doNew,

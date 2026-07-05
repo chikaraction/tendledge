@@ -68,58 +68,116 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   ツールバー
+   メニューバー
 --------------------------------------------------------------------------- */
-#toolbar {
+#menubar-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.4rem 0.9rem;
+  gap: 0.6rem;
+  padding: 0 0.9rem;
   border-bottom: 1px solid var(--border);
   background: var(--bg-subtle);
   flex: none;
   user-select: none;
 }
 
-.toolbar-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.toolbar-actions {
-  flex: 1;
-  justify-content: center;
-}
-
 .app-name {
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+  margin-right: 0.4rem;
 }
 
-.toolbar-actions button {
+#menubar {
+  display: flex;
+  align-items: stretch;
+}
+
+.menu {
+  position: relative;
+  display: flex;
+}
+
+.menu-button {
   font: inherit;
-  font-size: 0.78rem;
-  padding: 0.3rem 0.6rem;
-  border: 1px solid var(--border);
+  font-size: 0.8rem;
+  padding: 0.35rem 0.7rem;
+  border: none;
   border-radius: 6px;
-  background: var(--bg);
+  background: none;
   color: var(--fg);
   cursor: pointer;
 }
 
-.toolbar-actions button:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+.menu-button:hover,
+.menu-button.open {
+  background: var(--bg-raised);
 }
 
-.toolbar-sep {
-  width: 1px;
-  height: 1.1rem;
-  background: var(--border);
-  margin: 0 0.2rem;
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 100;
+  min-width: 230px;
+  padding: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+/* display: flex が UA の [hidden] { display: none } を上書きしてしまうため明示する */
+.menu-dropdown[hidden] {
+  display: none;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--fg);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menu-item:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.menu-check {
+  width: 1em;
+  flex: none;
+  font-size: 0.75rem;
+}
+
+.menu-label {
+  flex: 1;
+}
+
+.menu-shortcut {
+  color: var(--fg-muted);
+  font-size: 0.72rem;
+  margin-left: 1.2rem;
+}
+
+.menu-item:hover .menu-shortcut {
+  color: inherit;
+}
+
+.menu-separator {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.3rem 0.2rem;
 }
 
 /* ---------------------------------------------------------------------------
@@ -513,7 +571,7 @@ body {
     --accent: #6d5bd0;
   }
 
-  #toolbar,
+  #menubar-row,
   #tabbar,
   #sidebar,
   #statusbar,
@@ -560,13 +618,8 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   設定ボタン・設定ダイアログ
+   設定ダイアログ
 --------------------------------------------------------------------------- */
-#btn-settings {
-  line-height: 1;
-  padding-inline: 0.5rem;
-}
-
 .settings-dialog {
   min-width: 22rem;
   padding: 1.2rem 1.4rem 1.4rem;

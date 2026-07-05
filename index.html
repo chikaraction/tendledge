@@ -7,22 +7,9 @@
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <header id="toolbar">
-      <div class="toolbar-group toolbar-left">
-        <span class="app-name">AsciiDoc Editor</span>
-      </div>
-      <div class="toolbar-group toolbar-actions">
-        <button id="btn-new" title="新規 (Ctrl+N)">新規</button>
-        <button id="btn-open" title="開く (Ctrl+O)">開く</button>
-        <button id="btn-open-folder" title="フォルダを保管庫として開く">フォルダを開く</button>
-        <button id="btn-save" title="保存 (Ctrl+S)">保存</button>
-        <button id="btn-save-as" title="名前を付けて保存 (Ctrl+Shift+S)">名前を付けて保存</button>
-        <span class="toolbar-sep" aria-hidden="true"></span>
-        <button id="btn-export-html" title="HTML としてエクスポート">HTML 出力</button>
-        <button id="btn-export-pdf" title="印刷 / PDF として保存 (Ctrl+P)">PDF / 印刷</button>
-        <span class="toolbar-sep" aria-hidden="true"></span>
-        <button id="btn-settings" title="設定">⚙</button>
-      </div>
+    <header id="menubar-row">
+      <span class="app-name">AsciiDoc Editor</span>
+      <nav id="menubar" aria-label="メニュー"></nav>
     </header>
     <nav id="tabbar" aria-label="開いているドキュメント"></nav>
     <main id="workspace">
