@@ -5,6 +5,7 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { readDir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { createDocumentStore } from "./core/documents";
 import { basename, joinPath, suggestedExportName } from "./core/paths";
+import type { Settings } from "./core/settings";
 import { buildVaultTree, type RawEntry } from "./core/vault-tree";
 import { convertToStandaloneHtml } from "./render";
 import { sampleDoc } from "./sample-doc";
@@ -13,6 +14,7 @@ import { createEditor } from "./ui/editor";
 import { createFileTree } from "./ui/file-tree";
 import { createPreview } from "./ui/preview";
 import { setupScrollSync } from "./ui/scroll-sync";
+import { createSettingsDialog, loadSettings, saveSettings } from "./ui/settings-dialog";
 import { setupShortcuts } from "./ui/shortcuts";
 import { renderTabs } from "./ui/tabs";
 
@@ -213,6 +215,38 @@ function exportPdf(): void {
   // 対象コンテンツの絞り込みは styles.css の @media print が担う。
   window.print();
 }
+
+// ---------------------------------------------------------------------------
+// 設定(テーマ・エディタのフォントサイズ・プレビューのデバウンス)
+// ---------------------------------------------------------------------------
+/** 設定を DOM/プレビューへ適用する(見た目・挙動の反映のみ。保存はしない) */
+function applySettings(settings: Settings): void {
+  if (settings.theme === "system") {
+    document.documentElement.removeAttribute("data-theme");
+  } else {
+    document.documentElement.setAttribute("data-theme", settings.theme);
+  }
+  document.documentElement.style.setProperty("--editor-font-size", `${settings.editorFontSize}px`);
+  preview.setDebounceMs(settings.previewDebounceMs);
+}
+
+async function initSettings(): Promise<void> {
+  const settings = await loadSettings();
+  applySettings(settings);
+
+  const dialog = createSettingsDialog(
+    document.getElementById("settings-dialog") as HTMLDialogElement,
+    settings,
+    (next) => {
+      applySettings(next);
+      void saveSettings(next);
+    },
+  );
+
+  document.getElementById("btn-settings")!.addEventListener("click", () => dialog.open());
+}
+
+void initSettings();
 
 // ---------------------------------------------------------------------------
 // ツールバーとショートカット

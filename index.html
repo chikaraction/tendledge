@@ -20,6 +20,8 @@
         <span class="toolbar-sep" aria-hidden="true"></span>
         <button id="btn-export-html" title="HTML としてエクスポート">HTML 出力</button>
         <button id="btn-export-pdf" title="印刷 / PDF として保存 (Ctrl+P)">PDF / 印刷</button>
+        <span class="toolbar-sep" aria-hidden="true"></span>
+        <button id="btn-settings" title="設定">⚙</button>
       </div>
       <span id="status" title="変換にかかった時間"></span>
     </header>
@@ -38,6 +40,7 @@
         <article id="preview" class="adoc"></article>
       </section>
     </main>
+    <dialog id="settings-dialog"></dialog>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
