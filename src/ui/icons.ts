@@ -1,7 +1,21 @@
 // Lucide アイコンの薄いラッパー。
 // 採用理由(Obsidian と同じセット・ISC ライセンス)は docs/design-direction.md 参照。
 // アイコンを増やすときはここの icons に追記する(直接 lucide を import しない)。
-import { ChevronRight, createElement, FileText, Folder, type IconNode, RotateCw, X } from "lucide";
+import {
+  ChevronRight,
+  CircleAlert,
+  createElement,
+  FileText,
+  Flame,
+  Folder,
+  type IconNode,
+  Info,
+  Lightbulb,
+  RotateCw,
+  Superscript,
+  TriangleAlert,
+  X,
+} from "lucide";
 
 export const icons = {
   chevron: ChevronRight,
@@ -9,6 +23,13 @@ export const icons = {
   folder: Folder,
   refresh: RotateCw,
   close: X,
+  footnote: Superscript,
+  // アドモニション(NOTE/TIP/IMPORTANT/WARNING/CAUTION)用
+  note: Info,
+  tip: Lightbulb,
+  important: CircleAlert,
+  warning: TriangleAlert,
+  caution: Flame,
 } satisfies Record<string, IconNode>;
 
 /** サイズとクラスを付けた SVG 要素を作る。色は currentColor を継承する。 */

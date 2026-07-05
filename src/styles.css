@@ -541,6 +541,25 @@ body {
   padding-right: 0.8rem;
 }
 
+.adoc .admonitionblock .icon .title {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+/* 注意を促す種類(IMPORTANT/WARNING/CAUTION)はエラー色で区別する */
+.adoc .admonitionblock.important,
+.adoc .admonitionblock.warning,
+.adoc .admonitionblock.caution {
+  border-left-color: var(--error);
+}
+
+.adoc .admonitionblock.important .icon,
+.adoc .admonitionblock.warning .icon,
+.adoc .admonitionblock.caution .icon {
+  color: var(--error);
+}
+
 .adoc table:not(.admonitionblock table) {
   border-collapse: collapse;
   margin: 1em 0;
@@ -574,6 +593,20 @@ body {
 .adoc #toc ul {
   list-style: none;
   padding-left: 1em;
+}
+
+.adoc .footnote-icon {
+  color: var(--accent);
+  vertical-align: -0.05em;
+  margin-right: 0.15em;
+}
+
+.adoc #footnotes .footnote {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2em;
+  margin: 0.3em 0;
+  color: var(--fg-muted);
 }
 
 /* ---------------------------------------------------------------------------
