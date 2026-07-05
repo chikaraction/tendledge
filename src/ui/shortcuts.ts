@@ -5,6 +5,8 @@ export interface ShortcutHandlers {
   onSave: () => void;
   onSaveAs: () => void;
   onPrint: () => void;
+  onCloseTab: () => void;
+  onNextTab: () => void;
 }
 
 export function setupShortcuts(handlers: ShortcutHandlers): void {
@@ -26,6 +28,12 @@ export function setupShortcuts(handlers: ShortcutHandlers): void {
     } else if (key === "p") {
       e.preventDefault();
       handlers.onPrint();
+    } else if (key === "w") {
+      e.preventDefault();
+      handlers.onCloseTab();
+    } else if (key === "tab") {
+      e.preventDefault();
+      handlers.onNextTab();
     }
   });
 }

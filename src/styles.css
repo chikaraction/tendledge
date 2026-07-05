@@ -77,23 +77,6 @@ body {
   letter-spacing: 0.02em;
 }
 
-#filename {
-  font-size: 0.8rem;
-  color: var(--fg-muted);
-}
-
-#dirty-indicator {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  display: none;
-}
-
-#dirty-indicator.visible {
-  display: inline-block;
-}
-
 .toolbar-actions button {
   font: inherit;
   font-size: 0.78rem;
@@ -126,6 +109,70 @@ body {
 
 #status.error {
   color: var(--error);
+}
+
+/* ---------------------------------------------------------------------------
+   タブバー
+--------------------------------------------------------------------------- */
+#tabbar {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  flex: none;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem 0.35rem 0.8rem;
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  border-right: 1px solid var(--border);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--fg);
+}
+
+.tab.active {
+  background: var(--bg);
+  color: var(--fg);
+  border-bottom-color: var(--accent);
+}
+
+.tab-dirty {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  visibility: hidden;
+}
+
+.tab-dirty.visible {
+  visibility: visible;
+}
+
+.tab-close {
+  font: inherit;
+  line-height: 1;
+  padding: 0.1rem 0.3rem;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+
+.tab-close:hover {
+  background: var(--border);
+  color: var(--fg);
 }
 
 /* ---------------------------------------------------------------------------
@@ -322,6 +369,7 @@ body {
   }
 
   #toolbar,
+  #tabbar,
   #divider,
   #editor-pane {
     display: none !important;

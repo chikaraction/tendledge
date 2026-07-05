@@ -1,15 +1,18 @@
 // 合成ルート: DOM の取得と各モジュールの接続だけを行う。
 // ロジックは core/(純粋関数)、DOM 操作は ui/、変換は render.ts に置く。
+import type { EditorState } from "@codemirror/state";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
-import { basename, suggestedExportName } from "./core/paths";
+import { createDocumentStore } from "./core/documents";
+import { suggestedExportName } from "./core/paths";
 import { convertToStandaloneHtml } from "./render";
 import { sampleDoc } from "./sample-doc";
 import { setupDivider } from "./ui/divider";
-import { createEditor, setDoc } from "./ui/editor";
+import { createEditor } from "./ui/editor";
 import { createPreview } from "./ui/preview";
 import { setupScrollSync } from "./ui/scroll-sync";
 import { setupShortcuts } from "./ui/shortcuts";
+import { renderTabs } from "./ui/tabs";
 
 // ---------------------------------------------------------------------------
 // DOM 要素
@@ -17,102 +20,131 @@ import { setupShortcuts } from "./ui/shortcuts";
 const previewEl = document.getElementById("preview")!;
 const previewPaneEl = document.getElementById("preview-pane")!;
 const statusEl = document.getElementById("status")!;
-const filenameEl = document.getElementById("filename")!;
-const dirtyIndicatorEl = document.getElementById("dirty-indicator")!;
+const tabbarEl = document.getElementById("tabbar")!;
 
 // ---------------------------------------------------------------------------
-// ファイル状態(新規 / 開く / 保存)
+// ドキュメント(タブ)状態とエディタ
 // ---------------------------------------------------------------------------
-let currentFilePath: string | undefined;
-let lastSavedContent = sampleDoc;
-let isDirty = false;
+const store = createDocumentStore({ initialContent: sampleDoc });
 
-function updateFileIndicator(): void {
-  filenameEl.textContent = currentFilePath ? basename(currentFilePath) : "Untitled";
-}
+// タブごとの EditorState(undo 履歴・カーソル位置を保持)。キーはドキュメント ID。
+const editorStates = new Map<number, EditorState>();
 
-function updateDirtyState(doc: string): void {
-  isDirty = doc !== lastSavedContent;
-  dirtyIndicatorEl.classList.toggle("visible", isDirty);
-}
-
-function confirmDiscardIfDirty(): boolean {
-  if (!isDirty) return true;
-  return window.confirm("保存されていない変更があります。破棄して続行しますか?");
-}
-
-// ---------------------------------------------------------------------------
-// プレビューとエディタ
-// ---------------------------------------------------------------------------
 const preview = createPreview({ previewEl, paneEl: previewPaneEl, statusEl });
 
-const view = createEditor({
+const editor = createEditor({
   parent: document.getElementById("editor-pane")!,
   doc: sampleDoc,
   onDocChanged: (doc) => {
+    store.updateContent(store.activeDoc().id, doc);
     preview.scheduleRender(doc);
-    updateDirtyState(doc);
+    updateTabs();
   },
 });
+const view = editor.view;
+
+function updateTabs(): void {
+  renderTabs(tabbarEl, store.list(), store.activeDoc().id, store.isDirty, {
+    onActivate: activateTab,
+    onClose: (id) => void closeTab(id),
+  });
+}
+
+/** アクティブタブの EditorState を退避してから、指定タブの状態に切り替える */
+function switchEditorTo(id: number, previousId?: number): void {
+  if (previousId !== undefined && previousId !== id) {
+    editorStates.set(previousId, view.state);
+  }
+  const doc = store.list().find((d) => d.id === id)!;
+  const state = editorStates.get(id) ?? editor.newState(doc.content);
+  view.setState(state);
+  preview.render(view.state.doc.toString());
+  updateTabs();
+  view.focus();
+}
+
+function activateTab(id: number): void {
+  const previousId = store.activeDoc().id;
+  if (id === previousId) return;
+  store.activate(id);
+  switchEditorTo(id, previousId);
+}
+
+async function closeTab(id: number): Promise<void> {
+  if (store.isDirty(id)) {
+    const ok = window.confirm("保存されていない変更があります。破棄してタブを閉じますか?");
+    if (!ok) return;
+  }
+  const previousId = store.activeDoc().id;
+  editorStates.delete(id);
+  store.close(id);
+  const nextActive = store.activeDoc().id;
+  if (previousId === id || nextActive !== previousId) {
+    switchEditorTo(nextActive);
+  } else {
+    updateTabs();
+  }
+}
 
 // 初回描画(デバウンスなしで即時)
 preview.render(view.state.doc.toString());
-updateFileIndicator();
+updateTabs();
 view.focus();
 
 setupDivider(document.getElementById("workspace")!, document.getElementById("divider")!);
 setupScrollSync(view, preview);
 
 // ---------------------------------------------------------------------------
-// 新規 / 開く / 保存 / 名前を付けて保存
+// 新規 / 開く / 保存 / 名前を付けて保存(すべてタブ単位の操作)
 // ---------------------------------------------------------------------------
-async function doNew(): Promise<void> {
-  if (!confirmDiscardIfDirty()) return;
-  setDoc(view, "");
-  currentFilePath = undefined;
-  lastSavedContent = "";
-  updateDirtyState("");
-  updateFileIndicator();
+function doNew(): void {
+  const previousId = store.activeDoc().id;
+  const doc = store.openUntitled();
+  switchEditorTo(doc.id, previousId);
 }
 
 async function doOpen(): Promise<void> {
-  if (!confirmDiscardIfDirty()) return;
   const path = await open({
     multiple: false,
     filters: [{ name: "AsciiDoc", extensions: ["adoc", "asciidoc", "asc", "txt"] }],
   });
   if (!path || Array.isArray(path)) return;
+  await openFileInTab(path);
+}
+
+/** ファイルをタブとして開く */
+async function openFileInTab(path: string): Promise<void> {
+  const previousId = store.activeDoc().id;
   const content = await readTextFile(path);
-  setDoc(view, content);
-  currentFilePath = path;
-  lastSavedContent = content;
-  updateDirtyState(content);
-  updateFileIndicator();
+  const { doc, alreadyOpen } = store.openFile(path, content);
+  if (alreadyOpen && doc.id === previousId) return;
+  // 既存タブなら編集中の内容(EditorState)をそのまま活かす
+  switchEditorTo(doc.id, previousId);
 }
 
 async function doSave(): Promise<void> {
-  if (!currentFilePath) {
+  const active = store.activeDoc();
+  if (!active.path) {
     await doSaveAs();
     return;
   }
   const doc = view.state.doc.toString();
-  await writeTextFile(currentFilePath, doc);
-  lastSavedContent = doc;
-  updateDirtyState(doc);
+  await writeTextFile(active.path, doc);
+  store.markSaved(active.id, doc);
+  updateTabs();
 }
 
 async function doSaveAs(): Promise<void> {
+  const active = store.activeDoc();
   const doc = view.state.doc.toString();
   const path = await save({
     filters: [{ name: "AsciiDoc", extensions: ["adoc"] }],
-    defaultPath: currentFilePath,
+    defaultPath: active.path,
   });
   if (!path) return;
   await writeTextFile(path, doc);
-  currentFilePath = path;
-  lastSavedContent = doc;
-  updateDirtyState(doc);
-  updateFileIndicator();
+  store.markSaved(active.id, doc, path);
+  updateTabs();
 }
 
 // ---------------------------------------------------------------------------
@@ -122,7 +154,7 @@ async function exportHtml(): Promise<void> {
   const html = convertToStandaloneHtml(view.state.doc.toString());
   const path = await save({
     filters: [{ name: "HTML", extensions: ["html"] }],
-    defaultPath: suggestedExportName(currentFilePath, "html"),
+    defaultPath: suggestedExportName(store.activeDoc().path, "html"),
   });
   if (!path) return;
   await writeTextFile(path, html);
@@ -137,7 +169,7 @@ function exportPdf(): void {
 // ---------------------------------------------------------------------------
 // ツールバーとショートカット
 // ---------------------------------------------------------------------------
-document.getElementById("btn-new")!.addEventListener("click", () => void doNew());
+document.getElementById("btn-new")!.addEventListener("click", () => doNew());
 document.getElementById("btn-open")!.addEventListener("click", () => void doOpen());
 document.getElementById("btn-save")!.addEventListener("click", () => void doSave());
 document.getElementById("btn-save-as")!.addEventListener("click", () => void doSaveAs());
@@ -145,9 +177,16 @@ document.getElementById("btn-export-html")!.addEventListener("click", () => void
 document.getElementById("btn-export-pdf")!.addEventListener("click", () => exportPdf());
 
 setupShortcuts({
-  onNew: () => void doNew(),
+  onNew: doNew,
   onOpen: () => void doOpen(),
   onSave: () => void doSave(),
   onSaveAs: () => void doSaveAs(),
   onPrint: exportPdf,
+  onCloseTab: () => void closeTab(store.activeDoc().id),
+  onNextTab: () => {
+    const previousId = store.activeDoc().id;
+    store.activateNext();
+    const nextId = store.activeDoc().id;
+    if (nextId !== previousId) switchEditorTo(nextId, previousId);
+  },
 });

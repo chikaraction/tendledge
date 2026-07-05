@@ -10,8 +10,6 @@
     <header id="toolbar">
       <div class="toolbar-group toolbar-left">
         <span class="app-name">AsciiDoc Editor</span>
-        <span id="filename" title="現在のファイル">Untitled</span>
-        <span id="dirty-indicator" aria-hidden="true"></span>
       </div>
       <div class="toolbar-group toolbar-actions">
         <button id="btn-new" title="新規 (Ctrl+N)">新規</button>
@@ -24,6 +22,7 @@
       </div>
       <span id="status" title="変換にかかった時間"></span>
     </header>
+    <nav id="tabbar" aria-label="開いているドキュメント"></nav>
     <main id="workspace">
       <section id="editor-pane"></section>
       <div id="divider" role="separator" aria-orientation="vertical"></div>

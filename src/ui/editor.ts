@@ -1,30 +1,46 @@
-// CodeMirror 6 エディタの生成とスクロール関連ヘルパ
+// CodeMirror 6 エディタの生成とスクロール関連ヘルパ。
+// タブ切替のために「同じ拡張セットで EditorState を作り直す」機能を持つ
+// (EditorState をタブごとに保持すれば undo 履歴やカーソル位置もタブごとに保たれる)。
 import { indentWithTab } from "@codemirror/commands";
 import { StreamLanguage } from "@codemirror/language";
+import { EditorState, type Extension } from "@codemirror/state";
 import { keymap } from "@codemirror/view";
 import { basicSetup, EditorView } from "codemirror";
 import { asciidocMode } from "../asciidoc-mode";
+
+export interface EditorController {
+  view: EditorView;
+  /** タブ用に新しい EditorState を作る(拡張セットは共通) */
+  newState(content: string): EditorState;
+}
 
 export function createEditor(opts: {
   parent: HTMLElement;
   doc: string;
   onDocChanged: (doc: string) => void;
-}): EditorView {
-  return new EditorView({
-    doc: opts.doc,
+}): EditorController {
+  const extensions: Extension = [
+    basicSetup,
+    keymap.of([indentWithTab]),
+    StreamLanguage.define(asciidocMode),
+    EditorView.lineWrapping,
+    EditorView.updateListener.of((update) => {
+      if (update.docChanged) {
+        opts.onDocChanged(update.state.doc.toString());
+      }
+    }),
+  ];
+
+  function newState(content: string): EditorState {
+    return EditorState.create({ doc: content, extensions });
+  }
+
+  const view = new EditorView({
+    state: newState(opts.doc),
     parent: opts.parent,
-    extensions: [
-      basicSetup,
-      keymap.of([indentWithTab]),
-      StreamLanguage.define(asciidocMode),
-      EditorView.lineWrapping,
-      EditorView.updateListener.of((update) => {
-        if (update.docChanged) {
-          opts.onDocChanged(update.state.doc.toString());
-        }
-      }),
-    ],
   });
+
+  return { view, newState };
 }
 
 /** ドキュメント全体を置き換える */
