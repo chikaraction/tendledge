@@ -1,14 +1,18 @@
 # AsciiDoc Editor (Tauri + CodeMirror 6 + Asciidoctor.js)
 
-リアルタイムプレビュー付き AsciiDoc エディタ(マイルストーン 1〜6 実装済み)。
+リアルタイムプレビュー付き AsciiDoc エディタ(マイルストーン 1〜7 実装済み)。
+デザインは Slate(ダークファースト + 紫アクセント、[docs/design-direction.md](docs/design-direction.md))。
 
 - 左右分割レイアウト(ディバイダをドラッグしてリサイズ可能)
 - CodeMirror 6 エディタ + AsciiDoc ハイライト(表セル、インラインマクロ、
   ブロックのネストに対応)
 - Asciidoctor.js によるデバウンス付きリアルタイム変換(デバウンス時間は設定で変更可)
-- ライト / ダークモード(設定で固定も、OS 追従も可能)
+- ライト / ダークモード(表示メニューまたは設定で固定、OS 追従も可能)
+- **メニューバー**: ファイル操作・エクスポート・設定・テーマ切替・サイドバー切替
+  (キーボードショートカット Ctrl+N/O/S/Shift+S 対応)
+- **ステータスバー**: 行・列 / 文字数 / 変換時間を常時表示
 - ファイルの新規 / 開く / 保存 / 名前を付けて保存(`@tauri-apps/plugin-fs` +
-  `plugin-dialog`、キーボードショートカット Ctrl+N/O/S/Shift+S 対応)
+  `plugin-dialog`)
 - **タブ**: 複数ドキュメントの同時オープン(Ctrl+W で閉じる、Ctrl+Tab で切替。
   undo 履歴・カーソル位置はタブごとに保持)
 - **保管庫**: フォルダを開いてサイドバーのファイルツリーから編集対象を選択
@@ -19,6 +23,7 @@
 - HTML エクスポート、PDF / 印刷(`window.print()`、OS の印刷ダイアログ経由)
 - プレビューは DOMPurify でサニタイズ(保管庫で第三者のファイルを開いても
   スクリプトを実行させない)+ CSP 設定済み
+- アイコンは [Lucide](https://lucide.dev/)(ISC ライセンス)
 - Vitest によるユニットテスト(`npm test`。純粋ロジックは `src/core/` に分離)
 
 ## 前提
