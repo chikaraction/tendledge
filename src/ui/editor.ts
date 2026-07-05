@@ -26,6 +26,20 @@ export function createEditor(opts: {
     keymap.of([indentWithTab]),
     StreamLanguage.define(asciidocMode),
     EditorView.lineWrapping,
+    // CodeMirror の既定テーマは常に light 配色なので、Slate のデザイントークン
+    // (CSS 変数)で上書きする。ダークテーマ時に行番号ガター等が白いままになるのを防ぐ。
+    EditorView.theme({
+      "&": { backgroundColor: "var(--bg)", color: "var(--fg)" },
+      ".cm-content": { caretColor: "var(--fg)" },
+      ".cm-gutters": {
+        backgroundColor: "var(--bg-subtle)",
+        color: "var(--fg-muted)",
+        border: "none",
+      },
+      ".cm-activeLine": { backgroundColor: "var(--bg-subtle)" },
+      ".cm-activeLineGutter": { backgroundColor: "var(--bg-raised)" },
+      ".cm-selectionBackground, ::selection": { backgroundColor: "var(--accent)" },
+    }),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         opts.onDocChanged(update.state.doc.toString());

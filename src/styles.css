@@ -81,13 +81,6 @@ body {
   user-select: none;
 }
 
-.app-name {
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  margin-right: 0.4rem;
-}
-
 #menubar {
   display: flex;
   align-items: stretch;
