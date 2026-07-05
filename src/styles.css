@@ -122,11 +122,31 @@ body {
   margin: 0 0.2rem;
 }
 
-#status {
+/* ---------------------------------------------------------------------------
+   ステータスバー
+--------------------------------------------------------------------------- */
+#statusbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: none;
+  padding: 0.2rem 0.9rem;
+  background: var(--bg-subtle);
+  border-top: 1px solid var(--border);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   color: var(--fg-muted);
   white-space: nowrap;
+  user-select: none;
+}
+
+.statusbar-spacer {
+  flex: 1;
+}
+
+#statusbar-vault {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #status.error {
@@ -496,6 +516,7 @@ body {
   #toolbar,
   #tabbar,
   #sidebar,
+  #statusbar,
   #divider,
   #editor-pane {
     display: none !important;

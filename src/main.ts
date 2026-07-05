@@ -16,6 +16,7 @@ import { createPreview } from "./ui/preview";
 import { setupScrollSync } from "./ui/scroll-sync";
 import { createSettingsDialog, loadSettings, saveSettings } from "./ui/settings-dialog";
 import { setupShortcuts } from "./ui/shortcuts";
+import { createStatusbar } from "./ui/statusbar";
 import { renderTabs } from "./ui/tabs";
 
 // ---------------------------------------------------------------------------
@@ -23,10 +24,11 @@ import { renderTabs } from "./ui/tabs";
 // ---------------------------------------------------------------------------
 const previewEl = document.getElementById("preview")!;
 const previewPaneEl = document.getElementById("preview-pane")!;
-const statusEl = document.getElementById("status")!;
 const tabbarEl = document.getElementById("tabbar")!;
 const sidebarEl = document.getElementById("sidebar")!;
 const vaultNameEl = document.getElementById("vault-name")!;
+
+const statusbar = createStatusbar(document.getElementById("statusbar")!);
 
 // ---------------------------------------------------------------------------
 // ドキュメント(タブ)状態とエディタ
@@ -36,7 +38,11 @@ const store = createDocumentStore({ initialContent: sampleDoc });
 // タブごとの EditorState(undo 履歴・カーソル位置を保持)。キーはドキュメント ID。
 const editorStates = new Map<number, EditorState>();
 
-const preview = createPreview({ previewEl, paneEl: previewPaneEl, statusEl });
+const preview = createPreview({
+  previewEl,
+  paneEl: previewPaneEl,
+  statusEl: statusbar.convertStatusEl,
+});
 
 const editor = createEditor({
   parent: document.getElementById("editor-pane")!,
@@ -44,10 +50,21 @@ const editor = createEditor({
   onDocChanged: (doc) => {
     store.updateContent(store.activeDoc().id, doc);
     preview.scheduleRender(doc);
+    statusbar.setDocText(doc);
     updateTabs();
   },
+  onCursorChanged: (line, col) => statusbar.setCursor(line, col),
 });
 const view = editor.view;
+
+/** タブ切替直後など、updateListener を経由しない場面でステータスバーを同期する */
+function syncStatusbarFromView(): void {
+  const doc = view.state.doc;
+  const head = view.state.selection.main.head;
+  const line = doc.lineAt(head);
+  statusbar.setDocText(doc.toString());
+  statusbar.setCursor(line.number, head - line.from + 1);
+}
 
 function updateTabs(): void {
   renderTabs(tabbarEl, store.list(), store.activeDoc().id, store.isDirty, {
@@ -65,6 +82,7 @@ function switchEditorTo(id: number, previousId?: number): void {
   const state = editorStates.get(id) ?? editor.newState(doc.content);
   view.setState(state);
   preview.render(view.state.doc.toString());
+  syncStatusbarFromView();
   updateTabs();
   fileTree.setActivePath(doc.path);
   view.focus();
@@ -126,6 +144,7 @@ async function refreshVault(): Promise<void> {
   fileTree.setActivePath(store.activeDoc().path);
   vaultNameEl.textContent = basename(vaultPath);
   vaultNameEl.title = vaultPath;
+  statusbar.setVaultName(basename(vaultPath));
   sidebarEl.hidden = false;
 }
 
@@ -138,6 +157,7 @@ async function doOpenFolder(): Promise<void> {
 
 // 初回描画(デバウンスなしで即時)
 preview.render(view.state.doc.toString());
+syncStatusbarFromView();
 updateTabs();
 view.focus();
 
