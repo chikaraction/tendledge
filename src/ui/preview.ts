@@ -6,7 +6,7 @@ import {
   editorLineForPreviewScrollTop,
   previewScrollTopForLine,
 } from "../core/scroll-sync";
-import { convertToPreviewHtml } from "../render";
+import { convertToPreviewHtml, sanitizePreviewHtml } from "../render";
 
 export interface PreviewController {
   /** 即時に変換・描画する(初回描画用) */
@@ -70,7 +70,7 @@ export function createPreview(opts: {
   function render(source: string): void {
     const start = performance.now();
     try {
-      previewEl.innerHTML = convertToPreviewHtml(source);
+      previewEl.innerHTML = sanitizePreviewHtml(convertToPreviewHtml(source));
       rebuildHeadingAnchors(source);
       statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;
       statusEl.classList.remove("error");
