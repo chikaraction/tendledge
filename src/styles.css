@@ -1,14 +1,18 @@
 /* ---------------------------------------------------------------------------
    ベース
 --------------------------------------------------------------------------- */
+/* デザイントークンは docs/design-direction.md(Slate)で定義。
+   Slate はダークファースト: 基準はダーク側で、ライトは同じ構造の淡色版。
+   階層は 地(--bg) / バー類(--bg-subtle) / 浮き面(--bg-raised)の3段。 */
 :root {
   /* ライト配色(既定値。system 設定時はメディアクエリがこれを上書きする) */
   --bg: #ffffff;
-  --bg-subtle: #f6f6f4;
-  --fg: #1f1f1e;
-  --fg-muted: #6f6e69;
-  --border: #e2e1dd;
-  --accent: #2f6f5f;
+  --bg-subtle: #f4f4f7;
+  --bg-raised: #ececf1;
+  --fg: #26262e;
+  --fg-muted: #6f6f7e;
+  --border: #e1e1e8;
+  --accent: #6d5bd0;
   --error: #b0362c;
   --editor-ratio: 50%;
   --editor-font-size: 14px;
@@ -18,24 +22,26 @@
 /* テーマ設定が "system" の場合: OS の配色設定に追従する */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #1c1c1b;
-    --bg-subtle: #242423;
-    --fg: #e8e7e2;
-    --fg-muted: #9c9b94;
-    --border: #3a3936;
-    --accent: #6fbfa8;
+    --bg: #1b1b22;
+    --bg-subtle: #16161c;
+    --bg-raised: #202028;
+    --fg: #dcdce4;
+    --fg-muted: #8d8da0;
+    --border: #2c2c36;
+    --accent: #a78bfa;
     --error: #e5766c;
   }
 }
 
 /* テーマ設定が明示的に "dark" の場合: OS の設定に関わらずダークにする */
 :root[data-theme="dark"] {
-  --bg: #1c1c1b;
-  --bg-subtle: #242423;
-  --fg: #e8e7e2;
-  --fg-muted: #9c9b94;
-  --border: #3a3936;
-  --accent: #6fbfa8;
+  --bg: #1b1b22;
+  --bg-subtle: #16161c;
+  --bg-raised: #202028;
+  --fg: #dcdce4;
+  --fg-muted: #8d8da0;
+  --border: #2c2c36;
+  --accent: #a78bfa;
   --error: #e5766c;
 }
 
@@ -209,7 +215,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: var(--bg-subtle);
+  background: var(--bg-raised);
   border-right: 1px solid var(--border);
   user-select: none;
 }
@@ -479,11 +485,12 @@ body {
   :root {
     /* ダークモードの配色が印刷に漏れないよう、印刷時は常にライト配色にする */
     --bg: #ffffff;
-    --bg-subtle: #f6f6f4;
-    --fg: #1f1f1e;
-    --fg-muted: #6f6e69;
-    --border: #e2e1dd;
-    --accent: #2f6f5f;
+    --bg-subtle: #f4f4f7;
+    --bg-raised: #ececf1;
+    --fg: #26262e;
+    --fg-muted: #6f6f7e;
+    --border: #e1e1e8;
+    --accent: #6d5bd0;
   }
 
   #toolbar,
@@ -544,7 +551,7 @@ body {
   padding: 1.2rem 1.4rem 1.4rem;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: var(--bg);
+  background: var(--bg-raised);
   color: var(--fg);
 }
 
