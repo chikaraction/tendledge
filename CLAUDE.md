@@ -22,6 +22,10 @@ npm run test:watch    # Vitest watch mode
 
 Tests follow a t-wada-style discipline: pure logic lives in `src/core/` with colocated `*.test.ts` specs (Japanese `describe`/`it` that read as specifications); new core logic is written test-first, and existing behavior was locked with characterization tests before refactoring. There is no lint script — don't assume `npm run lint` exists.
 
+Commit each completed feature as you go, without asking for confirmation — one feature per commit, message in Japanese, on a feature branch. Do not batch a whole milestone into one working-tree pile and split it afterwards (retroactive splitting is expensive and error-prone). Pushing and PR creation still require an explicit request.
+
+When implementing a new milestone/feature, follow the workflow in the `milestone` skill (`.claude/skills/milestone/SKILL.md`). Manual verification steps for Tauri-only features live in the `verify-tauri` skill.
+
 Rust side (`src-tauri/`) builds via the `tauri` CLI above; there's no need to invoke `cargo build` directly during normal frontend work.
 
 ## Architecture
