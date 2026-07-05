@@ -1,0 +1,16 @@
+= AsciiDoc 記法サンプル集
+:author: AsciiDoc Editor
+:doctype: article
+
+このフォルダには、AsciiDoc の記法を一通り確認できるサンプルファイルを
+テーマ別に分けて置いています。「フォルダを開く」でこの `sample` フォルダを
+開くと、サイドバーから各ファイルを見比べながら記法を確認できます。
+
+* link:01-headings-and-text.adoc[見出しと段落・インライン文字装飾]
+* link:02-lists.adoc[各種リスト(箇条書き・番号付き・説明・チェックリスト)]
+* link:03-blocks.adoc[ブロック要素(コード・引用・サイドバー・オープン・パススルー)]
+* link:04-tables.adoc[表(テーブル)]
+* link:05-links-and-media.adoc[リンク・画像・相互参照・脚注]
+* link:06-admonitions-and-attributes.adoc[アドモニション・属性・コメント]
+
+TIP: 左のエディタで各ファイルを編集すると、右のプレビューに即座に反映されます。
