@@ -12,6 +12,7 @@ import { sampleDoc } from "./sample-doc";
 import { setupDivider } from "./ui/divider";
 import { createEditor } from "./ui/editor";
 import { createFileTree } from "./ui/file-tree";
+import { icon, icons } from "./ui/icons";
 import { createMenubar } from "./ui/menubar";
 import { createPreview } from "./ui/preview";
 import { setupScrollSync } from "./ui/scroll-sync";
@@ -336,7 +337,9 @@ const menubar = createMenubar(document.getElementById("menubar")!, [
 
 void initSettings();
 
-document.getElementById("btn-vault-refresh")!.addEventListener("click", () => void refreshVault());
+const vaultRefreshBtn = document.getElementById("btn-vault-refresh")!;
+vaultRefreshBtn.replaceChildren(icon(icons.refresh, 13));
+vaultRefreshBtn.addEventListener("click", () => void refreshVault());
 
 setupShortcuts({
   onNew: doNew,

@@ -260,9 +260,11 @@ body {
 }
 
 .tab-close {
+  display: flex;
+  align-items: center;
   font: inherit;
   line-height: 1;
-  padding: 0.1rem 0.3rem;
+  padding: 0.15rem;
   border: none;
   border-radius: 4px;
   background: none;
@@ -320,9 +322,10 @@ body {
 }
 
 #btn-vault-refresh {
+  display: flex;
+  align-items: center;
   font: inherit;
-  font-size: 0.8rem;
-  padding: 0.05rem 0.35rem;
+  padding: 0.2rem 0.3rem;
   border: none;
   border-radius: 4px;
   background: none;
@@ -343,12 +346,36 @@ body {
 }
 
 .tree-dir summary {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
   cursor: pointer;
   color: var(--fg-muted);
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* display: flex で既定の開閉マーカーが消えるため、シェブロンで代替する */
+.tree-dir summary::-webkit-details-marker {
+  display: none;
+}
+
+.tree-chevron {
+  flex: none;
+  transition: transform 0.1s;
+}
+
+.tree-dir[open] > summary .tree-chevron {
+  transform: rotate(90deg);
+}
+
+.tree-icon {
+  flex: none;
+}
+
+.tree-label {
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -362,7 +389,9 @@ body {
 }
 
 .tree-file {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
   width: 100%;
   text-align: left;
   font: inherit;
@@ -373,8 +402,6 @@ body {
   color: var(--fg);
   cursor: pointer;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .tree-file:hover {

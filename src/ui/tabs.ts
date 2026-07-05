@@ -1,6 +1,7 @@
 // タブバーの描画(状態は core/documents.ts が持ち、ここは表示とイベントだけ)
 import type { DocumentInfo } from "../core/documents";
 import { basename } from "../core/paths";
+import { icon, icons } from "./icons";
 
 export interface TabsHandlers {
   onActivate(id: number): void;
@@ -33,7 +34,7 @@ export function renderTabs(
 
       const close = document.createElement("button");
       close.className = "tab-close";
-      close.textContent = "×";
+      close.appendChild(icon(icons.close, 12));
       close.title = "閉じる (Ctrl+W)";
       close.addEventListener("click", (e) => {
         e.stopPropagation(); // タブのアクティブ化を発火させない
