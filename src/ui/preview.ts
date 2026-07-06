@@ -68,16 +68,6 @@ export function createPreview(opts: {
     return Math.max(0, paneEl.scrollHeight - paneEl.clientHeight);
   }
 
-  // 脚注参照・脚注定義の番号の前に、上付き文字っぽさを示すアイコンを付ける。
-  // Asciidoctor.js は "[1]" のような素のテキストしか出さないため、
-  // ここで DOM を後処理して Lucide アイコンを差し込む。
-  function decorateFootnotes(): void {
-    const refs = previewEl.querySelectorAll<HTMLElement>("sup.footnote, sup.footnoteref");
-    refs.forEach((sup) => sup.prepend(icon(icons.footnote, 11, "footnote-icon")));
-    const defs = previewEl.querySelectorAll<HTMLElement>("#footnotes .footnote");
-    defs.forEach((def) => def.prepend(icon(icons.footnote, 13, "footnote-icon")));
-  }
-
   // アドモニション(NOTE/TIP/IMPORTANT/WARNING/CAUTION)のラベルに種類別の
   // Lucide アイコンを付ける。Asciidoctor.js のデフォルト出力は
   // td.icon > .title に "Note" 等のテキストを置くだけなので、その前に差し込む。
@@ -107,7 +97,6 @@ export function createPreview(opts: {
     const start = performance.now();
     try {
       previewEl.innerHTML = sanitizePreviewHtml(convertToPreviewHtml(source));
-      decorateFootnotes();
       decorateAdmonitions();
       rebuildHeadingAnchors(source);
       statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;

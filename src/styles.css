@@ -656,14 +656,6 @@ body {
   padding-left: 1em;
 }
 
-.adoc .footnote-icon {
-  width: 0.85em;
-  height: 0.85em;
-  color: var(--accent);
-  vertical-align: -0.05em;
-  margin-right: 0.15em;
-}
-
 .adoc #footnotes .footnote {
   display: flex;
   align-items: baseline;
