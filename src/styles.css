@@ -567,13 +567,12 @@ body {
 /* 例示ブロック(====)は枠線の面、サイドバー(****)は持ち上がった背景面。
    面の作りを変えることで、相互にネストしたときにも境界が判別できる */
 .adoc .exampleblock {
-  border: 1px solid var(--border);
-  border-radius: 8px;
   margin: 1em 0;
-  overflow: hidden; /* タイトル帯を角丸からはみ出させない */
 }
 
 .adoc .exampleblock > .content {
+  border: 1px solid var(--border);
+  border-radius: 8px;
   padding: 0.9rem 1.1rem;
 }
 
@@ -581,30 +580,25 @@ body {
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: 8px;
-  margin: 1em 0;
-  overflow: hidden;
-}
-
-.adoc .sidebarblock > .content {
   padding: 0.9rem 1.1rem;
+  margin: 1em 0;
 }
 
-/* ブロックタイトル(.タイトル 記法)は、本文と区切る「見出し帯」にする。
-   例示ブロックは .title が .content と並ぶ兄弟要素、
-   サイドバーは .content の中の先頭子要素という構造の違いがあるため、
-   サイドバー側は負のマージンで .content の余白までタイトル帯を広げる。 */
-.adoc .exampleblock > .title,
-.adoc .sidebarblock > .content > .title {
-  font-size: 0.82em;
-  font-weight: 650;
-  color: var(--fg-muted);
-  padding: 0.5rem 1.1rem;
-  background: var(--bg-raised);
-  border-bottom: 1px solid var(--border);
+/* 例示ブロックのキャプション("例 1. タイトル")は本文と同じ地のまま、
+   枠の外にイタリック体のキャプションとして置く(表のキャプションと揃える)。
+   サイドバーのタイトルは番号が付かないため、太字の小見出しとして本文内に置く。 */
+.adoc .exampleblock > .title {
+  font-style: italic;
+  font-size: 0.85em;
+  color: var(--accent);
+  margin-bottom: 0.4em;
 }
 
 .adoc .sidebarblock > .content > .title {
-  margin: -0.9rem -1.1rem 0.7rem;
+  font-weight: 700;
+  font-size: 1.05em;
+  color: var(--accent);
+  margin-bottom: 0.5em;
 }
 
 .adoc .exampleblock .content > :first-child,
@@ -704,6 +698,18 @@ body {
 .adoc table.tableblock thead th,
 .adoc table.tableblock tr:nth-child(even) {
   background: var(--bg-subtle);
+}
+
+/* 表のキャプション("表 1. タイトル")。例示ブロックのキャプションと
+   見た目を揃える(イタリック・アクセント色・本文と同じ地) */
+.adoc table.tableblock > caption.title {
+  caption-side: top;
+  text-align: left;
+  font-style: italic;
+  font-size: 0.85em;
+  font-weight: 400;
+  color: var(--accent);
+  padding-bottom: 0.4em;
 }
 
 .adoc ul,
