@@ -33,8 +33,10 @@ export function createPreview(opts: {
   paneEl: HTMLElement;
   statusEl: HTMLElement;
   debounceMs?: number;
+  /** 相対パス画像の src を表示可能な URL に解決する(不要なら undefined を返す) */
+  resolveImageSrc?: (src: string) => string | undefined;
 }): PreviewController {
-  const { previewEl, paneEl, statusEl } = opts;
+  const { previewEl, paneEl, statusEl, resolveImageSrc } = opts;
   let debounceMs = opts.debounceMs ?? 300;
 
   // ソースの見出し行とプレビューの h1〜h6 を出現順で対応付ける。
@@ -66,6 +68,17 @@ export function createPreview(opts: {
 
   function maxScroll(): number {
     return Math.max(0, paneEl.scrollHeight - paneEl.clientHeight);
+  }
+
+  // 相対パスの画像はプレビューの URL 基準では解決できないため、
+  // main 側から渡された変換(文書ディレクトリ基準 + asset プロトコル)で書き換える。
+  function decorateImages(): void {
+    if (!resolveImageSrc) return;
+    previewEl.querySelectorAll("img").forEach((img) => {
+      const src = img.getAttribute("src");
+      const resolved = src ? resolveImageSrc(src) : undefined;
+      if (resolved) img.setAttribute("src", resolved);
+    });
   }
 
   // チェックリスト(* [x] / * [ ])の先頭グリフをチェックボックスに置き換える。
@@ -122,6 +135,7 @@ export function createPreview(opts: {
     const start = performance.now();
     try {
       previewEl.innerHTML = sanitizePreviewHtml(convertToPreviewHtml(source));
+      decorateImages();
       decorateChecklists();
       decorateAdmonitions();
       rebuildHeadingAnchors(source);

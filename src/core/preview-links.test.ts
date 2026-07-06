@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyPreviewLink } from "./preview-links";
+import { classifyPreviewLink, resolveImagePath } from "./preview-links";
 
 const DOC = "C:\\vault\\sample\\00-index.adoc";
 
@@ -79,5 +79,36 @@ describe("classifyPreviewLink: プレビュー内リンクの分類", () => {
         kind: "none",
       });
     });
+  });
+});
+
+describe("resolveImagePath: プレビュー画像の相対パス解決", () => {
+  it("相対パスは現在の文書のディレクトリ基準の絶対パスにする", () => {
+    expect(resolveImagePath("images/logo.svg", DOC)).toBe(
+      "C:\\vault\\sample\\images\\logo.svg",
+    );
+  });
+
+  it("../ を含む相対パスも解決する", () => {
+    expect(resolveImagePath("../shared/logo.png", DOC)).toBe("C:\\vault\\shared\\logo.png");
+  });
+
+  it("URL(https / data:)はそのまま扱うため undefined を返す", () => {
+    expect(resolveImagePath("https://example.com/a.png", DOC)).toBeUndefined();
+    expect(resolveImagePath("data:image/png;base64,xxxx", DOC)).toBeUndefined();
+  });
+
+  it("絶対パス風(/ や \\ 始まり)は変換しない", () => {
+    expect(resolveImagePath("/usr/share/a.png", DOC)).toBeUndefined();
+  });
+
+  it("現在の文書がパスを持たない(無題)場合は変換しない", () => {
+    expect(resolveImagePath("images/logo.svg", undefined)).toBeUndefined();
+  });
+
+  it("パーセントエンコードされたファイル名を復元する", () => {
+    expect(resolveImagePath("images/%E5%9B%B3.png", DOC)).toBe(
+      "C:\\vault\\sample\\images\\図.png",
+    );
   });
 });

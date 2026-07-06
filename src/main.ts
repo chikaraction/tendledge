@@ -1,11 +1,13 @@
 // 合成ルート: DOM の取得と各モジュールの接続だけを行う。
 // ロジックは core/(純粋関数)、DOM 操作は ui/、変換は render.ts に置く。
 import type { EditorState } from "@codemirror/state";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { readDir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { createDocumentStore } from "./core/documents";
 import { basename, joinPath, suggestedExportName } from "./core/paths";
+import { resolveImagePath } from "./core/preview-links";
 import { DEFAULT_SETTINGS, type Settings, type Theme } from "./core/settings";
 import { buildVaultTree, type RawEntry } from "./core/vault-tree";
 import { convertToStandaloneHtml } from "./render";
@@ -51,6 +53,16 @@ const preview = createPreview({
   previewEl,
   paneEl: previewPaneEl,
   statusEl: statusbar.convertStatusEl,
+  resolveImageSrc: (src) => {
+    const path = resolveImagePath(src, store.activeDoc().path);
+    if (!path) return undefined;
+    try {
+      // Tauri の asset プロトコル URL へ変換(ブラウザプレビューでは使えないのでそのまま)
+      return convertFileSrc(path);
+    } catch {
+      return undefined;
+    }
+  },
 });
 
 const editor = createEditor({

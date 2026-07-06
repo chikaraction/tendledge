@@ -23,6 +23,13 @@
      パス解決は `core/paths.ts` に `dirname` / `resolvePath` を追加
 2. **footnote アイコンの除去**(05 の指摘)
    - `preview.ts` の `decorateFootnotes()` と関連 CSS・アイコン定義を削除
+3. **相対パス画像の表示対応**(実装中に判明した追加スコープ)
+   - プレビューの相対 URL はアプリ URL 基準で解決されるため、ローカル画像は
+     そもそも表示できなかった(サンプルをローカル画像化するだけでは壊れたまま)
+   - `resolveImagePath`(core・テスト付き)で文書ディレクトリ基準の絶対パスに
+     解決し、main 側で `convertFileSrc` により asset プロトコル URL へ変換
+   - `tauri.conf.json` の `assetProtocol` を有効化(scope は `**`。保管庫は
+     任意のフォルダを開けるため。img の表示のみで script は CSP が防ぐ)
 
 ### B. プレビューの CSS / 表示改善
 

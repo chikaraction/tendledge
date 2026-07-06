@@ -48,3 +48,25 @@ export function classifyPreviewLink(
 
   return { kind: "open-file", path: resolvePath(dirname(currentDocPath), decoded) };
 }
+
+/**
+ * プレビュー内 <img> の src の解決。
+ * プレビューの相対 URL はアプリ自身の URL 基準で解決されてしまい表示できないため、
+ * 相対パスは現在の文書のディレクトリ基準の絶対パスに変換する
+ * (asset プロトコル URL への変換は Tauri API を知る main 側の責務)。
+ * URL(https / data: 等)・絶対パス・無題文書では undefined(そのまま)を返す。
+ */
+export function resolveImagePath(
+  src: string | null,
+  currentDocPath: string | undefined,
+): string | undefined {
+  if (!src || ANY_SCHEME.test(src) || /^[\\/]/.test(src)) return undefined;
+  if (!currentDocPath) return undefined;
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(src);
+  } catch {
+    decoded = src;
+  }
+  return resolvePath(dirname(currentDocPath), decoded);
+}
