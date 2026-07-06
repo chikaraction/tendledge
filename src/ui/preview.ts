@@ -6,7 +6,7 @@ import {
   editorLineForPreviewScrollTop,
   previewScrollTopForLine,
 } from "../core/scroll-sync";
-import { icon, icons } from "./icons";
+import { decorateAdmonitionIcons } from "./admonition-icons";
 import { convertToPreviewHtml, sanitizePreviewHtml } from "../render";
 
 export interface PreviewController {
@@ -106,38 +106,13 @@ export function createPreview(opts: {
     });
   }
 
-  // アドモニション(NOTE/TIP/IMPORTANT/WARNING/CAUTION)のラベルに種類別の
-  // Lucide アイコンを付ける。Asciidoctor.js のデフォルト出力は
-  // td.icon > .title に "Note" 等のテキストを置くだけなので、その前に差し込む。
-  const ADMONITION_ICONS = {
-    note: icons.note,
-    tip: icons.tip,
-    important: icons.important,
-    warning: icons.warning,
-    caution: icons.caution,
-  } as const;
-
-  function decorateAdmonitions(): void {
-    const blocks = previewEl.querySelectorAll<HTMLElement>(".admonitionblock");
-    blocks.forEach((block) => {
-      const type = (Object.keys(ADMONITION_ICONS) as (keyof typeof ADMONITION_ICONS)[]).find(
-        (t) => block.classList.contains(t),
-      );
-      const title = block.querySelector<HTMLElement>("td.icon .title");
-      if (!type || !title) return;
-      const svg = icon(ADMONITION_ICONS[type], 16, "admonition-icon");
-      svg.setAttribute("title", title.textContent ?? "");
-      title.replaceChildren(svg);
-    });
-  }
-
   function render(source: string): void {
     const start = performance.now();
     try {
       previewEl.innerHTML = sanitizePreviewHtml(convertToPreviewHtml(source));
       decorateImages();
       decorateChecklists();
-      decorateAdmonitions();
+      decorateAdmonitionIcons(previewEl);
       rebuildHeadingAnchors(source);
       statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;
       statusEl.classList.remove("error");

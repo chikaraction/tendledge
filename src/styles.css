@@ -847,6 +847,14 @@ body {
     --code-bg: #ececf1;
   }
 
+  /* ブラウザは既定で背景色を印刷から省く(WebView2/Chromium も同様)。
+     アドモニションのアイコンバッジなど背景色そのものが意味を持つ要素があるため、
+     印刷時も背景を保持させる */
+  .adoc, .adoc * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   #menubar-row,
   #tabbar,
   #sidebar,

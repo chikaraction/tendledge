@@ -17,11 +17,11 @@ import {
   type ViewModeState,
 } from "./core/view-mode";
 import { buildVaultTree, type RawEntry } from "./core/vault-tree";
-import { convertToStandaloneHtml } from "./render";
 import { sampleDoc } from "./sample-doc";
 import { setupDivider } from "./ui/divider";
 import { createEditor, editorScrollToLine, editorTopLine } from "./ui/editor";
 import { createFileTree } from "./ui/file-tree";
+import { buildExportHtml } from "./ui/html-export";
 import { icon, icons } from "./ui/icons";
 import { createMenubar } from "./ui/menubar";
 import { createPreview } from "./ui/preview";
@@ -298,7 +298,7 @@ async function doSaveAs(): Promise<void> {
 // HTML / PDF エクスポート
 // ---------------------------------------------------------------------------
 async function exportHtml(): Promise<void> {
-  const html = convertToStandaloneHtml(view.state.doc.toString());
+  const html = buildExportHtml(view.state.doc.toString());
   const path = await save({
     filters: [{ name: "HTML", extensions: ["html"] }],
     defaultPath: suggestedExportName(store.activeDoc().path, "html"),
