@@ -430,8 +430,16 @@ body {
 }
 
 #editor-pane .cm-scroller {
-  font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas,
-    monospace;
+  /* --editor-font-family は設定でフォント指定時のみ main.ts が定義する
+     (空文字列だと var() のフォールバックが働かないため、未指定時は変数ごと外す) */
+  font-family: var(
+    --editor-font-family,
+    ui-monospace,
+    "SFMono-Regular",
+    "Cascadia Code",
+    Consolas,
+    monospace
+  );
   line-height: 1.6;
 }
 
@@ -465,6 +473,7 @@ body {
   padding: 2rem 2.2rem 4rem;
   line-height: 1.75;
   font-size: var(--preview-font-size, 16px);
+  font-family: var(--preview-font-family, inherit);
 }
 
 .adoc h1,

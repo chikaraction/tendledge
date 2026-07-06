@@ -263,6 +263,21 @@ function applySettings(settings: Settings): void {
     "--preview-font-size",
     `${settings.previewFontSize}px`,
   );
+  // フォントファミリ未指定(空)のときは変数ごと外して CSS 側のフォールバックに任せる
+  // (空文字列を設定すると var() の第2引数が使われず、フォント指定が無効になるため)
+  if (settings.editorFontFamily) {
+    document.documentElement.style.setProperty("--editor-font-family", settings.editorFontFamily);
+  } else {
+    document.documentElement.style.removeProperty("--editor-font-family");
+  }
+  if (settings.previewFontFamily) {
+    document.documentElement.style.setProperty(
+      "--preview-font-family",
+      settings.previewFontFamily,
+    );
+  } else {
+    document.documentElement.style.removeProperty("--preview-font-family");
+  }
   preview.setDebounceMs(settings.previewDebounceMs);
 }
 
