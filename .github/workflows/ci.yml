@@ -1,0 +1,30 @@
+# フロントエンドの CI: PR とmasterへの push で Vitest と型チェック+ビルドを回す。
+# Rust 側 (src-tauri) はビルドが重く、カスタムコマンドも無いため対象外
+# (Tauri 依存機能の確認は verify-tauri スキルの実機チェックリストで行う)。
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  frontend:
+    name: テストとビルド
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: 依存関係のインストール
+        run: npm ci
+
+      - name: ユニットテスト (Vitest)
+        run: npm test
+
+      - name: 型チェック + ビルド (tsc && vite build)
+        run: npm run build

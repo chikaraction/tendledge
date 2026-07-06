@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run build)",
+      "PowerShell(npm test)",
+      "PowerShell(npm run build)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git checkout *)",
+      "Bash(git fetch *)",
+      "Bash(git push *)",
+      "PowerShell(git add *)",
+      "PowerShell(git commit *)",
+      "PowerShell(git checkout *)",
+      "PowerShell(git status)",
+      "PowerShell(git diff *)",
+      "PowerShell(git log *)",
+      "PowerShell(git push *)",
+      "PowerShell(& \"C:\\Program Files\\GitHub CLI\\gh.exe\" pr view *)",
+      "PowerShell(& \"C:\\Program Files\\GitHub CLI\\gh.exe\" pr list *)",
+      "PowerShell(& \"C:\\Program Files\\GitHub CLI\\gh.exe\" run list *)",
+      "PowerShell(& \"C:\\Program Files\\GitHub CLI\\gh.exe\" run view *)",
+      "PowerShell(Get-Process *)"
+    ]
+  }
+}
