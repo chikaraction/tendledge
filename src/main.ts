@@ -3,6 +3,7 @@
 import type { EditorState } from "@codemirror/state";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { readDir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { createDocumentStore } from "./core/documents";
 import { basename, joinPath, suggestedExportName } from "./core/paths";
 import { DEFAULT_SETTINGS, type Settings, type Theme } from "./core/settings";
@@ -15,6 +16,7 @@ import { createFileTree } from "./ui/file-tree";
 import { icon, icons } from "./ui/icons";
 import { createMenubar } from "./ui/menubar";
 import { createPreview } from "./ui/preview";
+import { setupPreviewLinks } from "./ui/preview-links";
 import { setupScrollSync } from "./ui/scroll-sync";
 import {
   createSettingsDialog,
@@ -170,6 +172,17 @@ view.focus();
 
 setupDivider(document.getElementById("workspace")!, document.getElementById("divider")!);
 setupScrollSync(view, preview);
+setupPreviewLinks({
+  paneEl: previewPaneEl,
+  currentDocPath: () => store.activeDoc().path,
+  openFile: (path) => {
+    openFileInTab(path).catch((err) => console.error("リンク先を開けませんでした:", err));
+  },
+  openExternal: (url) => {
+    // Tauri 実機ではシステムブラウザへ。ブラウザプレビューでは新規タブにフォールバック。
+    openUrl(url).catch(() => window.open(url, "_blank", "noopener"));
+  },
+});
 
 // ---------------------------------------------------------------------------
 // 新規 / 開く / 保存 / 名前を付けて保存(すべてタブ単位の操作)
