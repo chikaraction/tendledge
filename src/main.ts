@@ -212,6 +212,7 @@ viewModeControls.render(viewModeState);
 function applyViewMode(next: ViewModeState): void {
   viewModeState = next;
   viewModeControls.render(viewModeState);
+  menubar.refresh();
 }
 
 setupPreviewLinks({
@@ -391,6 +392,24 @@ const menubar = createMenubar(document.getElementById("menubar")!, [
       },
       "separator",
       {
+        label: "エディタのみ",
+        checked: () => viewModeState.mode === "editor",
+        onSelect: () => applyViewMode(setMode(viewModeState, "editor")),
+      },
+      {
+        label: "分割",
+        shortcut: "Ctrl+K V",
+        checked: () => viewModeState.mode === "split",
+        onSelect: () => applyViewMode(setMode(viewModeState, "split")),
+      },
+      {
+        label: "プレビューのみ",
+        shortcut: "Ctrl+Shift+V",
+        checked: () => viewModeState.mode === "preview",
+        onSelect: () => applyViewMode(setMode(viewModeState, "preview")),
+      },
+      "separator",
+      {
         label: "テーマ: システムに合わせる",
         checked: () => currentSettings.theme === "system",
         onSelect: () => setTheme("system"),
@@ -428,4 +447,6 @@ setupShortcuts({
     const nextId = store.activeDoc().id;
     if (nextId !== previousId) switchEditorTo(nextId, previousId);
   },
+  onToggleSplit: () => applyViewMode(toggleSplit(viewModeState)),
+  onTogglePreview: () => applyViewMode(togglePreview(viewModeState)),
 });
