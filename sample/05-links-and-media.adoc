@@ -9,9 +9,14 @@
 
 == 画像
 
-image::https://asciidoctor.org/images/octocat.jpg[Octocat, 120]
+画像は文書からの相対パスで指定します。
 
-インライン画像も使えます: image:https://asciidoctor.org/images/octocat.jpg[Octocat, 16, 16] のように文中に配置できます。
+image::images/sample-logo.svg[サンプルロゴ, 120]
+
+インライン画像も使えます: image:images/sample-logo.svg[サンプルロゴ, 16, 16] のように文中に配置できます。
+
+NOTE: 外部 URL の画像(`+image::https://...+`)も記法としては有効ですが、
+このアプリではセキュリティ設定(CSP)により表示されません。
 
 == 相互参照(クロスリファレンス)
 

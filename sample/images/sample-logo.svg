@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- サンプル用の自作ロゴ(外部 URL は CSP で表示できないためローカル同梱) -->
+  <rect x="8" y="8" width="104" height="104" rx="18" fill="#6d5bd0"/>
+  <text x="60" y="74" font-family="Georgia, serif" font-size="46" font-weight="bold"
+        fill="#ffffff" text-anchor="middle">A=</text>
+  <rect x="30" y="88" width="60" height="6" rx="3" fill="#ffffff" opacity="0.85"/>
+</svg>

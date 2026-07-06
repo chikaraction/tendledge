@@ -14,6 +14,12 @@
   --border: #e1e1e8;
   --accent: #6d5bd0;
   --error: #b0362c;
+  /* コード面(インラインコード・コードブロックの背景)。ダークでは地より
+     「明るい」面にしないと本文背景と判別できないため、bg-subtle とは分離する。
+     ライトも bg-subtle と同値にすると、表のゼブラ縞(偶数行 = bg-subtle)の
+     中にコードブロックが入ったとき(セル演算子 a| 等)に境界が消えるため、
+     bg-raised と同値にして区別する */
+  --code-bg: #ececf1;
   /* アドモニションの種類別カラー(伝統的な AsciiDoc/Font Awesome 配色に合わせる) */
   --note-color: #2f80ed;
   --tip-color: #d9a005;
@@ -37,6 +43,7 @@
     --border: #2c2c36;
     --accent: #a78bfa;
     --error: #e5766c;
+    --code-bg: #26262f;
   }
 }
 
@@ -50,6 +57,7 @@
   --border: #2c2c36;
   --accent: #a78bfa;
   --error: #e5766c;
+  --code-bg: #26262f;
 }
 
 /* テーマ設定が明示的に "light" の場合: ベースのライト配色をそのまま使う(上書き不要) */
@@ -476,6 +484,12 @@ body {
   font-family: var(--preview-font-family, inherit);
 }
 
+/* 文書タイトル(先頭の h1)は .adoc 自身の padding-top があるので
+   margin を重ねない(タイトル上に無駄な余白ができるため) */
+.adoc > h1:first-child {
+  margin-top: 0;
+}
+
 .adoc h1,
 .adoc h2,
 .adoc h3,
@@ -530,14 +544,14 @@ body {
   font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas,
     monospace;
   font-size: 0.88em;
-  background: var(--bg-subtle);
+  background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 0.1em 0.35em;
 }
 
 .adoc .listingblock pre {
-  background: var(--bg-subtle);
+  background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.9rem 1.1rem;
@@ -548,6 +562,53 @@ body {
   background: none;
   border: none;
   padding: 0;
+}
+
+/* 例示ブロック(====)は枠線の面、サイドバー(****)は持ち上がった背景面。
+   面の作りを変えることで、相互にネストしたときにも境界が判別できる */
+.adoc .exampleblock {
+  margin: 1em 0;
+}
+
+.adoc .exampleblock > .content {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1.1rem;
+}
+
+.adoc .sidebarblock {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1.1rem;
+  margin: 1em 0;
+}
+
+/* 例示ブロックのキャプション("例 1. タイトル")は本文と同じ地のまま、
+   枠の外にイタリック体のキャプションとして置く(表のキャプションと揃える)。
+   サイドバーのタイトルは番号が付かないため、太字の小見出しとして本文内に置く。 */
+.adoc .exampleblock > .title {
+  font-style: italic;
+  font-size: 0.85em;
+  color: var(--accent);
+  margin-bottom: 0.4em;
+}
+
+.adoc .sidebarblock > .content > .title {
+  font-weight: 700;
+  font-size: 1.05em;
+  color: var(--accent);
+  margin-bottom: 0.5em;
+}
+
+.adoc .exampleblock .content > :first-child,
+.adoc .sidebarblock .content > :first-child {
+  margin-top: 0;
+}
+
+.adoc .exampleblock .content > :last-child,
+.adoc .sidebarblock .content > :last-child {
+  margin-bottom: 0;
 }
 
 .adoc .admonitionblock {
@@ -639,9 +700,62 @@ body {
   background: var(--bg-subtle);
 }
 
+/* 表のキャプション("表 1. タイトル")。例示ブロックのキャプションと
+   見た目を揃える(イタリック・アクセント色・本文と同じ地) */
+.adoc table.tableblock > caption.title {
+  caption-side: top;
+  text-align: left;
+  font-style: italic;
+  font-size: 0.85em;
+  font-weight: 400;
+  color: var(--accent);
+  padding-bottom: 0.4em;
+}
+
 .adoc ul,
 .adoc ol {
   padding-left: 1.4em;
+}
+
+/* チェックリスト: リストマーカーを消し、グリフ置き換え後のチェックボックスを整える */
+.adoc ul.checklist {
+  list-style: none;
+  padding-left: 0.6em;
+}
+
+/* ブラウザ既定のチェックボックスは、未チェック時の枠色がチェック時の
+   accent-color と揃わず、サイズも px 固定でプレビューのフォントサイズに
+   追従しない。appearance: none で見た目を完全に手描きにして両方解決する。 */
+.adoc .task-checkbox {
+  appearance: none;
+  /* input はフォントを継承しない(UA既定)ため、明示しないと 1em が
+     ブラウザ既定サイズ基準になりプレビューのフォントサイズに追従しない */
+  font-size: inherit;
+  width: 1em;
+  height: 1em;
+  margin: 0 0.5em 0 0;
+  vertical-align: -0.15em;
+  border: 0.14em solid var(--fg-muted);
+  border-radius: 0.25em;
+  background: var(--bg);
+  position: relative;
+}
+
+.adoc .task-checkbox:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.adoc .task-checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 0.26em;
+  top: 0.04em;
+  width: 0.28em;
+  height: 0.52em;
+  border: solid #fff;
+  border-width: 0 0.15em 0.15em 0;
+  transform: rotate(45deg);
 }
 
 .adoc blockquote {
@@ -654,14 +768,6 @@ body {
 .adoc #toc ul {
   list-style: none;
   padding-left: 1em;
-}
-
-.adoc .footnote-icon {
-  width: 0.85em;
-  height: 0.85em;
-  color: var(--accent);
-  vertical-align: -0.05em;
-  margin-right: 0.15em;
 }
 
 .adoc #footnotes .footnote {
@@ -685,6 +791,7 @@ body {
     --fg-muted: #6f6f7e;
     --border: #e1e1e8;
     --accent: #6d5bd0;
+    --code-bg: #ececf1;
   }
 
   #menubar-row,

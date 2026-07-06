@@ -33,8 +33,10 @@ export function createPreview(opts: {
   paneEl: HTMLElement;
   statusEl: HTMLElement;
   debounceMs?: number;
+  /** 相対パス画像の src を表示可能な URL に解決する(不要なら undefined を返す) */
+  resolveImageSrc?: (src: string) => string | undefined;
 }): PreviewController {
-  const { previewEl, paneEl, statusEl } = opts;
+  const { previewEl, paneEl, statusEl, resolveImageSrc } = opts;
   let debounceMs = opts.debounceMs ?? 300;
 
   // ソースの見出し行とプレビューの h1〜h6 を出現順で対応付ける。
@@ -68,14 +70,40 @@ export function createPreview(opts: {
     return Math.max(0, paneEl.scrollHeight - paneEl.clientHeight);
   }
 
-  // 脚注参照・脚注定義の番号の前に、上付き文字っぽさを示すアイコンを付ける。
-  // Asciidoctor.js は "[1]" のような素のテキストしか出さないため、
-  // ここで DOM を後処理して Lucide アイコンを差し込む。
-  function decorateFootnotes(): void {
-    const refs = previewEl.querySelectorAll<HTMLElement>("sup.footnote, sup.footnoteref");
-    refs.forEach((sup) => sup.prepend(icon(icons.footnote, 11, "footnote-icon")));
-    const defs = previewEl.querySelectorAll<HTMLElement>("#footnotes .footnote");
-    defs.forEach((def) => def.prepend(icon(icons.footnote, 13, "footnote-icon")));
+  // 相対パスの画像はプレビューの URL 基準では解決できないため、
+  // main 側から渡された変換(文書ディレクトリ基準 + asset プロトコル)で書き換える。
+  function decorateImages(): void {
+    if (!resolveImageSrc) return;
+    previewEl.querySelectorAll("img").forEach((img) => {
+      const src = img.getAttribute("src");
+      const resolved = src ? resolveImageSrc(src) : undefined;
+      if (resolved) img.setAttribute("src", resolved);
+    });
+  }
+
+  // チェックリスト(* [x] / * [ ])の先頭グリフをチェックボックスに置き換える。
+  // Asciidoctor.js は ✓(U+2713)/ ❏(U+2751)の文字を出すだけで、❏ は影付きの
+  // グリフで違和感があり、完了側もチェックボックスには見えないため。
+  const CHECK_GLYPHS: Record<string, boolean> = {
+    "✓": true, // ✓(&#10003;)
+    "❏": false, // ❏(&#10063;)
+  };
+
+  function decorateChecklists(): void {
+    const items = previewEl.querySelectorAll<HTMLElement>("ul.checklist > li > p");
+    items.forEach((p) => {
+      const text = p.firstChild;
+      if (text?.nodeType !== Node.TEXT_NODE || !text.textContent) return;
+      const glyph = text.textContent[0];
+      if (!(glyph in CHECK_GLYPHS)) return;
+      text.textContent = text.textContent.slice(1).trimStart();
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.disabled = true;
+      box.checked = CHECK_GLYPHS[glyph];
+      box.className = "task-checkbox";
+      p.prepend(box);
+    });
   }
 
   // アドモニション(NOTE/TIP/IMPORTANT/WARNING/CAUTION)のラベルに種類別の
@@ -107,7 +135,8 @@ export function createPreview(opts: {
     const start = performance.now();
     try {
       previewEl.innerHTML = sanitizePreviewHtml(convertToPreviewHtml(source));
-      decorateFootnotes();
+      decorateImages();
+      decorateChecklists();
       decorateAdmonitions();
       rebuildHeadingAnchors(source);
       statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;

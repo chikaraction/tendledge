@@ -12,7 +12,6 @@ import {
   Info,
   Lightbulb,
   RotateCw,
-  Superscript,
   TriangleAlert,
   X,
 } from "lucide";
@@ -23,7 +22,6 @@ export const icons = {
   folder: Folder,
   refresh: RotateCw,
   close: X,
-  footnote: Superscript,
   // アドモニション(NOTE/TIP/IMPORTANT/WARNING/CAUTION)用
   note: Info,
   tip: Lightbulb,

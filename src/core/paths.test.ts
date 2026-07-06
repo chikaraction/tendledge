@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { basename, joinPath, suggestedExportName } from "./paths";
+import { basename, dirname, joinPath, resolvePath, suggestedExportName } from "./paths";
 
 describe("joinPath: 親パスの区切り文字を継承して結合する", () => {
   it("バックスラッシュ区切りの親にはバックスラッシュで結合する", () => {
@@ -35,6 +35,52 @@ describe("basename: パスからファイル名を取り出す", () => {
   it("【特性化】末尾が区切りの場合はパス全体にフォールバックする", () => {
     // 最後の要素が空文字になるため `|| path` が効く、という現在の実装の挙動。
     expect(basename("C:\\docs\\")).toBe("C:\\docs\\");
+  });
+});
+
+describe("dirname: パスから親ディレクトリを取り出す", () => {
+  it("Windows 形式のパスから親ディレクトリを返す", () => {
+    expect(dirname("C:\\docs\\memo.adoc")).toBe("C:\\docs");
+  });
+
+  it("POSIX 形式のパスから親ディレクトリを返す", () => {
+    expect(dirname("/home/user/memo.adoc")).toBe("/home/user");
+  });
+
+  it("区切りを含まない文字列には空文字を返す", () => {
+    expect(dirname("memo.adoc")).toBe("");
+  });
+});
+
+describe("resolvePath: 基準ディレクトリから相対パスを解決する", () => {
+  it("同じディレクトリのファイルを解決する", () => {
+    expect(resolvePath("C:\\vault\\sample", "02-lists.adoc")).toBe(
+      "C:\\vault\\sample\\02-lists.adoc",
+    );
+  });
+
+  it("./ 始まりの相対パスを解決する", () => {
+    expect(resolvePath("C:\\vault\\sample", "./02-lists.adoc")).toBe(
+      "C:\\vault\\sample\\02-lists.adoc",
+    );
+  });
+
+  it("../ で親ディレクトリに上がれる", () => {
+    expect(resolvePath("C:\\vault\\sample", "../notes/memo.adoc")).toBe(
+      "C:\\vault\\notes\\memo.adoc",
+    );
+  });
+
+  it("サブディレクトリへ下がれる", () => {
+    expect(resolvePath("/home/user/vault", "sub/memo.adoc")).toBe("/home/user/vault/sub/memo.adoc");
+  });
+
+  it("POSIX の絶対パス基準でルートの / を失わない", () => {
+    expect(resolvePath("/home/user", "../memo.adoc")).toBe("/home/memo.adoc");
+  });
+
+  it("基準がバックスラッシュ区切りなら結果もバックスラッシュ区切りになる(リンクは / で書かれるため)", () => {
+    expect(resolvePath("C:\\vault", "sub/memo.adoc")).toBe("C:\\vault\\sub\\memo.adoc");
   });
 });
 

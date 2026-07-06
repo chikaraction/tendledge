@@ -33,9 +33,9 @@ const BLOCK_DELIMITERS: { re: RegExp; monospace: boolean }[] = [
   { re: /^\|={3,}\s*$/, monospace: false }, // 表
 ];
 
-// 表セルの区切り。列/行結合(2+|)、配置(<.^|)、セルスタイル(a|)などの
-// 接頭辞をまとめて「セル区切り」として1トークンにする。
-const TABLE_CELL = /^(?:\d+(?:\.\d+)?[+*])?(?:[<^>](?:\.[<^>])?)?[adehlms]?\|/;
+// 表セルの区切り。列/行結合(2+| / .2+| / 2.2+|)、配置(<.^|)、
+// セルスタイル(a|)などの接頭辞をまとめて「セル区切り」として1トークンにする。
+const TABLE_CELL = /^(?:(?:\d+(?:\.\d+)?|\.\d+)[+*])?(?:[<^>](?:\.[<^>])?)?[adehlms]?\|/;
 
 export const asciidocMode: StreamParser<State> = {
   name: "asciidoc",
