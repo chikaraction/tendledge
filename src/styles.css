@@ -836,15 +836,18 @@ body {
 --------------------------------------------------------------------------- */
 @media print {
   :root {
-    /* ダークモードの配色が印刷に漏れないよう、印刷時は常にライト配色にする */
-    --bg: #ffffff;
-    --bg-subtle: #f4f4f7;
-    --bg-raised: #ececf1;
-    --fg: #26262e;
-    --fg-muted: #6f6f7e;
-    --border: #e1e1e8;
-    --accent: #6d5bd0;
-    --code-bg: #ececf1;
+    /* ダークモードの配色が印刷に漏れないよう、印刷時は常にライト配色にする。
+       :root[data-theme="dark"](詳細度 0-2-0)がこの :root(0-1-0)より高く、
+       黙っていると明示的にダークテーマを選んでいる場合に上書きされてしまうため
+       !important で確実に勝たせる */
+    --bg: #ffffff !important;
+    --bg-subtle: #f4f4f7 !important;
+    --bg-raised: #ececf1 !important;
+    --fg: #26262e !important;
+    --fg-muted: #6f6f7e !important;
+    --border: #e1e1e8 !important;
+    --accent: #6d5bd0 !important;
+    --code-bg: #ececf1 !important;
   }
 
   /* ブラウザは既定で背景色を印刷から省く(WebView2/Chromium も同様)。
