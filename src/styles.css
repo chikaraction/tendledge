@@ -717,10 +717,39 @@ body {
   padding-left: 0.6em;
 }
 
+/* ブラウザ既定のチェックボックスは、未チェック時の枠色がチェック時の
+   accent-color と揃わず、サイズも px 固定でプレビューのフォントサイズに
+   追従しない。appearance: none で見た目を完全に手描きにして両方解決する。 */
 .adoc .task-checkbox {
-  accent-color: var(--accent);
-  margin: 0 0.45em 0 0;
+  appearance: none;
+  /* input はフォントを継承しない(UA既定)ため、明示しないと 1em が
+     ブラウザ既定サイズ基準になりプレビューのフォントサイズに追従しない */
+  font-size: inherit;
+  width: 1em;
+  height: 1em;
+  margin: 0 0.5em 0 0;
   vertical-align: -0.15em;
+  border: 0.14em solid var(--fg-muted);
+  border-radius: 0.25em;
+  background: var(--bg);
+  position: relative;
+}
+
+.adoc .task-checkbox:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.adoc .task-checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 0.26em;
+  top: 0.04em;
+  width: 0.28em;
+  height: 0.52em;
+  border: solid #fff;
+  border-width: 0 0.15em 0.15em 0;
+  transform: rotate(45deg);
 }
 
 .adoc blockquote {
