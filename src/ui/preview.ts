@@ -13,8 +13,8 @@ import { renderMermaidBlocks } from "./mermaid";
 import { convertToPreviewHtml, sanitizePreviewHtml } from "../render";
 
 export interface PreviewController {
-  /** 即時に変換・描画する(初回描画用) */
-  render(source: string): void;
+  /** 即時に変換・描画する。mermaid 図の非同期描画まで含めて完了で解決する */
+  render(source: string): Promise<void>;
   /** デバウンス付きで変換を予約する(入力中用) */
   scheduleRender(source: string): void;
   /** エディタの行番号に対応するプレビューの scrollTop を返す */
@@ -105,7 +105,7 @@ export function createPreview(opts: {
     }
   }
 
-  function render(source: string): void {
+  function render(source: string): Promise<void> {
     const start = performance.now();
     try {
       const generation = ++renderGeneration;
@@ -114,14 +114,18 @@ export function createPreview(opts: {
       decorateChecklists(previewEl);
       decorateAdmonitionIcons(previewEl);
       rebuildHeadingAnchors(source);
-      void decorateMermaid(source, generation);
+      // 図の完了を待ちたい呼び出し元(印刷前のテーマ差し替え)のために返す。
+      // 変換 ms のステータスは同期部分だけを計測する(図はキャッシュが効けばほぼゼロ)
+      const diagramsDone = decorateMermaid(source, generation);
       statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;
       statusEl.classList.remove("error");
+      return diagramsDone;
     } catch (err) {
       // 変換エラーでも直前のプレビューは保持し、ステータスだけ知らせる
       statusEl.textContent = "変換エラー";
       statusEl.classList.add("error");
       console.error(err);
+      return Promise.resolve();
     }
   }
 

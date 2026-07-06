@@ -5,7 +5,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { readDir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { resolveMermaidTheme } from "./core/diagram";
+import { type MermaidTheme, resolveMermaidTheme } from "./core/diagram";
 import { createDocumentStore } from "./core/documents";
 import { basename, joinPath, suggestedExportName } from "./core/paths";
 import { resolveImagePath } from "./core/preview-links";
@@ -57,6 +57,13 @@ const statusbar = createStatusbar(document.getElementById("statusbar")!);
 let currentSettings: Settings = { ...DEFAULT_SETTINGS };
 // テーマ "system" のときの実効テーマ判定(mermaid 図のテーマ解決に使う)
 const prefersDarkMedia = window.matchMedia("(prefers-color-scheme: dark)");
+// 直近でプレビューに焼き込んだ mermaid テーマ。これが変わったら図を描き直す
+// (配色が SVG に焼き込まれるため CSS では追従できない)。初回描画はデフォルト設定で
+// 走るので、その実効テーマで初期化しておく。
+let lastMermaidTheme: MermaidTheme = resolveMermaidTheme(
+  DEFAULT_SETTINGS.theme,
+  prefersDarkMedia.matches,
+);
 
 // ---------------------------------------------------------------------------
 // ドキュメント(タブ)状態とエディタ
@@ -80,9 +87,13 @@ const preview = createPreview({
       return undefined;
     }
   },
-  // mermaid の配色は SVG に焼き込まれるため、描画時点の実効テーマを毎回解決する
-  mermaidTheme: () => resolveMermaidTheme(currentSettings.theme, prefersDarkMedia.matches),
+  // mermaid の配色は SVG に焼き込まれるため、描画時点の実効テーマを毎回解決する。
+  // 印刷時だけは mermaidThemeOverride でライト(default)に一時上書きする。
+  mermaidTheme: () =>
+    mermaidThemeOverride ?? resolveMermaidTheme(currentSettings.theme, prefersDarkMedia.matches),
 });
+// 印刷前の一時テーマ上書き(exportPdf が設定/解除する)
+let mermaidThemeOverride: MermaidTheme | undefined;
 
 const editor = createEditor({
   parent: document.getElementById("editor-pane")!,
@@ -121,7 +132,7 @@ function switchEditorTo(id: number, previousId?: number): void {
   const doc = store.list().find((d) => d.id === id)!;
   const state = editorStates.get(id) ?? editor.newState(doc.content);
   view.setState(state);
-  preview.render(view.state.doc.toString());
+  void preview.render(view.state.doc.toString());
   syncStatusbarFromView();
   updateTabs();
   fileTree.setActivePath(doc.path);
@@ -196,7 +207,7 @@ async function doOpenFolder(): Promise<void> {
 }
 
 // 初回描画(デバウンスなしで即時)
-preview.render(view.state.doc.toString());
+void preview.render(view.state.doc.toString());
 syncStatusbarFromView();
 updateTabs();
 view.focus();
@@ -317,10 +328,22 @@ async function exportHtml(): Promise<void> {
   await writeTextFile(path, html);
 }
 
-function exportPdf(): void {
+async function exportPdf(): Promise<void> {
   // 実際の書き出しはブラウザ/OSの印刷ダイアログ(「PDFとして保存」)に委ねる。
   // 対象コンテンツの絞り込みは styles.css の @media print が担う。
+  // @media print はライト配色を強制するが、ダークで焼き込み済みの mermaid SVG は
+  // ダークのまま出てしまう。印刷前に default テーマで図を描き直し、印刷後に戻す。
+  const needsSwap =
+    resolveMermaidTheme(currentSettings.theme, prefersDarkMedia.matches) === "dark";
+  if (needsSwap) {
+    mermaidThemeOverride = "default";
+    await preview.render(view.state.doc.toString());
+  }
   window.print();
+  if (needsSwap) {
+    mermaidThemeOverride = undefined;
+    await preview.render(view.state.doc.toString());
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -357,7 +380,19 @@ function applySettings(settings: Settings): void {
     document.documentElement.style.removeProperty("--preview-font-family");
   }
   preview.setDebounceMs(settings.previewDebounceMs);
+  rerenderPreviewIfMermaidThemeChanged();
 }
+
+/** mermaid の実効テーマが前回描画時から変わっていたら、図を描き直す */
+function rerenderPreviewIfMermaidThemeChanged(): void {
+  const next = resolveMermaidTheme(currentSettings.theme, prefersDarkMedia.matches);
+  if (next === lastMermaidTheme) return;
+  lastMermaidTheme = next;
+  void preview.render(view.state.doc.toString());
+}
+
+// テーマ "system" のまま OS のダーク設定が切り替わったときも図を追従させる
+prefersDarkMedia.addEventListener("change", rerenderPreviewIfMermaidThemeChanged);
 
 function updateSettings(next: Settings): void {
   currentSettings = next;
@@ -404,7 +439,7 @@ const menubar = createMenubar(document.getElementById("menubar")!, [
         label: "PDF / 印刷...",
         shortcut: "Ctrl+P",
         title: "現在のテーマ設定に関わらず、常にライト配色で出力されます",
-        onSelect: exportPdf,
+        onSelect: () => void exportPdf(),
       },
       "separator",
       { label: "設定...", onSelect: () => settingsDialog?.open() },
@@ -470,7 +505,7 @@ setupShortcuts({
   onOpen: () => void doOpen(),
   onSave: () => void doSave(),
   onSaveAs: () => void doSaveAs(),
-  onPrint: exportPdf,
+  onPrint: () => void exportPdf(),
   onCloseTab: () => void closeTab(store.activeDoc().id),
   onNextTab: () => {
     const previousId = store.activeDoc().id;
