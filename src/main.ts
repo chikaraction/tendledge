@@ -209,10 +209,24 @@ const viewModeControls = createViewModeControls(
 );
 viewModeControls.render(viewModeState);
 
+/** モード切替で再表示されたペインを、もう一方の現在位置に合わせて一度だけスクロール同期する */
+function syncScrollOnModeChange(previousMode: ViewModeState["mode"], nextMode: ViewModeState["mode"]): void {
+  if (previousMode === nextMode) return;
+  if (previousMode === "editor" && nextMode !== "editor") {
+    // プレビューが再表示された: エディタの現在位置に合わせる
+    preview.paneEl.scrollTop = preview.scrollTopForLine(editorTopLine(view), view.state.doc.lines);
+  } else if (previousMode === "preview" && nextMode !== "preview") {
+    // エディタが再表示された: プレビューだけ読み進めた位置を引き継ぐ
+    editorScrollToLine(view, preview.lineForScrollTop(preview.paneEl.scrollTop, view.state.doc.lines));
+  }
+}
+
 function applyViewMode(next: ViewModeState): void {
+  const previousMode = viewModeState.mode;
   viewModeState = next;
   viewModeControls.render(viewModeState);
   menubar.refresh();
+  syncScrollOnModeChange(previousMode, viewModeState.mode);
 }
 
 setupPreviewLinks({
