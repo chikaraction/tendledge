@@ -71,7 +71,7 @@ ____
 
 == パススルーブロック
 
-`++++` で囲むと、AsciiDoctor の変換を通さず生の HTML がそのまま出力されます。
+`pass:c[++++]` で囲むと、AsciiDoctor の変換を通さず生の HTML がそのまま出力されます。
 
 ++++
 <p style="color: var(--color-accent, #06c);">これは passthrough ブロックによる生 HTML です。</p>
