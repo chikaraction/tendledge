@@ -47,6 +47,11 @@ export function createEditor(opts: {
       ".cm-activeLine": { backgroundColor: "color-mix(in srgb, var(--fg) 5%, transparent)" },
       ".cm-activeLineGutter": { backgroundColor: "var(--bg-raised)" },
       ".cm-selectionBackground": { backgroundColor: "var(--accent)" },
+      // 選択文字列と同じテキストの自動ハイライト(highlightSelectionMatches)。
+      // 既定の薄緑は Slate と合わないため、選択色より弱いアクセント色にする。
+      ".cm-selectionMatch": {
+        backgroundColor: "color-mix(in srgb, var(--accent) 30%, transparent)",
+      },
       "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
         backgroundColor: "var(--accent)",
       },
