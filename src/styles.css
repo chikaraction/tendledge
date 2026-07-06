@@ -225,11 +225,48 @@ body {
 #tabbar {
   display: flex;
   align-items: stretch;
-  overflow-x: auto;
   flex: none;
   background: var(--bg-subtle);
   border-bottom: 1px solid var(--border);
   user-select: none;
+}
+
+#tabbar-tabs {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  flex: 1;
+  min-width: 0;
+}
+
+#tabbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex: none;
+  padding: 0 0.4rem;
+}
+
+.tabbar-action {
+  display: flex;
+  align-items: center;
+  font: inherit;
+  padding: 0.3rem;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+
+.tabbar-action:hover {
+  background: var(--border);
+  color: var(--fg);
+}
+
+.tabbar-action[aria-pressed="true"] {
+  background: var(--border);
+  color: var(--accent);
 }
 
 .tab {
@@ -470,6 +507,22 @@ body {
   overflow-y: auto;
   background: var(--bg);
   border-left: 1px solid var(--border);
+}
+
+/* 表示モード(エディタのみ / プレビューのみ)。split は属性なし = 既存レイアウトのまま */
+#workspace[data-view-mode="editor"] #preview-pane,
+#workspace[data-view-mode="editor"] #divider {
+  display: none;
+}
+
+#workspace[data-view-mode="editor"] #editor-pane {
+  width: auto;
+  flex: 1;
+}
+
+#workspace[data-view-mode="preview"] #editor-pane,
+#workspace[data-view-mode="preview"] #divider {
+  display: none;
 }
 
 /* ---------------------------------------------------------------------------
@@ -814,6 +867,9 @@ body {
   }
 
   #preview-pane {
+    /* エディタのみモード中は #preview-pane が display: none のため、
+       印刷時は表示モードによらず強制的に表示する */
+    display: block !important;
     overflow: visible;
     border-left: none;
     width: auto;

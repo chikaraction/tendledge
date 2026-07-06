@@ -4,13 +4,16 @@
 import {
   ChevronRight,
   CircleAlert,
+  Columns2,
   createElement,
+  Eye,
   FileText,
   Flame,
   Folder,
   type IconNode,
   Info,
   Lightbulb,
+  Pencil,
   RotateCw,
   TriangleAlert,
   X,
@@ -28,6 +31,10 @@ export const icons = {
   important: CircleAlert,
   warning: TriangleAlert,
   caution: Flame,
+  // 表示モード切り替え用
+  splitView: Columns2,
+  previewOnly: Eye,
+  edit: Pencil,
 } satisfies Record<string, IconNode>;
 
 /** サイズとクラスを付けた SVG 要素を作る。色は currentColor を継承する。 */

@@ -9,11 +9,18 @@ import { createDocumentStore } from "./core/documents";
 import { basename, joinPath, suggestedExportName } from "./core/paths";
 import { resolveImagePath } from "./core/preview-links";
 import { DEFAULT_SETTINGS, type Settings, type Theme } from "./core/settings";
+import {
+  createViewModeState,
+  setMode,
+  togglePreview,
+  toggleSplit,
+  type ViewModeState,
+} from "./core/view-mode";
 import { buildVaultTree, type RawEntry } from "./core/vault-tree";
 import { convertToStandaloneHtml } from "./render";
 import { sampleDoc } from "./sample-doc";
 import { setupDivider } from "./ui/divider";
-import { createEditor } from "./ui/editor";
+import { createEditor, editorScrollToLine, editorTopLine } from "./ui/editor";
 import { createFileTree } from "./ui/file-tree";
 import { icon, icons } from "./ui/icons";
 import { createMenubar } from "./ui/menubar";
@@ -29,13 +36,15 @@ import {
 import { setupShortcuts } from "./ui/shortcuts";
 import { createStatusbar } from "./ui/statusbar";
 import { renderTabs } from "./ui/tabs";
+import { createViewModeControls } from "./ui/view-mode";
 
 // ---------------------------------------------------------------------------
 // DOM 要素
 // ---------------------------------------------------------------------------
 const previewEl = document.getElementById("preview")!;
 const previewPaneEl = document.getElementById("preview-pane")!;
-const tabbarEl = document.getElementById("tabbar")!;
+const tabbarTabsEl = document.getElementById("tabbar-tabs")!;
+const tabbarActionsEl = document.getElementById("tabbar-actions")!;
 const sidebarEl = document.getElementById("sidebar")!;
 const vaultNameEl = document.getElementById("vault-name")!;
 
@@ -88,7 +97,7 @@ function syncStatusbarFromView(): void {
 }
 
 function updateTabs(): void {
-  renderTabs(tabbarEl, store.list(), store.activeDoc().id, store.isDirty, {
+  renderTabs(tabbarTabsEl, store.list(), store.activeDoc().id, store.isDirty, {
     onActivate: activateTab,
     onClose: (id) => void closeTab(id),
   });
@@ -184,6 +193,27 @@ view.focus();
 
 setupDivider(document.getElementById("workspace")!, document.getElementById("divider")!);
 setupScrollSync(view, preview);
+
+// ---------------------------------------------------------------------------
+// 表示モード(エディタのみ / 分割 / プレビューのみ。ウィンドウ単位で1つ)
+// ---------------------------------------------------------------------------
+let viewModeState = createViewModeState();
+
+const viewModeControls = createViewModeControls(
+  tabbarActionsEl,
+  document.getElementById("workspace")!,
+  {
+    onToggleSplit: () => applyViewMode(toggleSplit(viewModeState)),
+    onTogglePreview: () => applyViewMode(togglePreview(viewModeState)),
+  },
+);
+viewModeControls.render(viewModeState);
+
+function applyViewMode(next: ViewModeState): void {
+  viewModeState = next;
+  viewModeControls.render(viewModeState);
+}
+
 setupPreviewLinks({
   paneEl: previewPaneEl,
   currentDocPath: () => store.activeDoc().path,
