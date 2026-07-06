@@ -14,6 +14,9 @@
   --border: #e1e1e8;
   --accent: #6d5bd0;
   --error: #b0362c;
+  /* コード面(インラインコード・コードブロックの背景)。ダークでは地より
+     「明るい」面にしないと本文背景と判別できないため、bg-subtle とは分離する */
+  --code-bg: #f4f4f7;
   /* アドモニションの種類別カラー(伝統的な AsciiDoc/Font Awesome 配色に合わせる) */
   --note-color: #2f80ed;
   --tip-color: #d9a005;
@@ -37,6 +40,7 @@
     --border: #2c2c36;
     --accent: #a78bfa;
     --error: #e5766c;
+    --code-bg: #26262f;
   }
 }
 
@@ -50,6 +54,7 @@
   --border: #2c2c36;
   --accent: #a78bfa;
   --error: #e5766c;
+  --code-bg: #26262f;
 }
 
 /* テーマ設定が明示的に "light" の場合: ベースのライト配色をそのまま使う(上書き不要) */
@@ -476,6 +481,12 @@ body {
   font-family: var(--preview-font-family, inherit);
 }
 
+/* 文書タイトル(先頭の h1)は .adoc 自身の padding-top があるので
+   margin を重ねない(タイトル上に無駄な余白ができるため) */
+.adoc > h1:first-child {
+  margin-top: 0;
+}
+
 .adoc h1,
 .adoc h2,
 .adoc h3,
@@ -530,14 +541,14 @@ body {
   font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas,
     monospace;
   font-size: 0.88em;
-  background: var(--bg-subtle);
+  background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 0.1em 0.35em;
 }
 
 .adoc .listingblock pre {
-  background: var(--bg-subtle);
+  background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.9rem 1.1rem;
@@ -677,6 +688,7 @@ body {
     --fg-muted: #6f6f7e;
     --border: #e1e1e8;
     --accent: #6d5bd0;
+    --code-bg: #f4f4f7;
   }
 
   #menubar-row,
