@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS, mergeSettings } from "./settings";
 
 describe("DEFAULT_SETTINGS: 既定値", () => {
-  it("テーマは system、フォントサイズは 14px、デバウンスは 300ms", () => {
+  it("テーマは system、フォントサイズは 14px、プレビューは 16px、デバウンスは 300ms", () => {
     expect(DEFAULT_SETTINGS).toEqual({
       theme: "system",
       editorFontSize: 14,
+      previewFontSize: 16,
       previewDebounceMs: 300,
     });
   });
@@ -14,8 +15,13 @@ describe("DEFAULT_SETTINGS: 既定値", () => {
 describe("mergeSettings: 保存値を検証してデフォルトにフォールバックする", () => {
   it("すべて正しい値ならそのまま採用する", () => {
     expect(
-      mergeSettings({ theme: "dark", editorFontSize: 18, previewDebounceMs: 500 }),
-    ).toEqual({ theme: "dark", editorFontSize: 18, previewDebounceMs: 500 });
+      mergeSettings({
+        theme: "dark",
+        editorFontSize: 18,
+        previewFontSize: 20,
+        previewDebounceMs: 500,
+      }),
+    ).toEqual({ theme: "dark", editorFontSize: 18, previewFontSize: 20, previewDebounceMs: 500 });
   });
 
   it("null を渡すとすべてデフォルトになる", () => {
@@ -42,6 +48,7 @@ describe("mergeSettings: 保存値を検証してデフォルトにフォール�
     expect(mergeSettings({ theme: "light" })).toEqual({
       theme: "light",
       editorFontSize: 14,
+      previewFontSize: 16,
       previewDebounceMs: 300,
     });
   });
@@ -55,16 +62,16 @@ describe("mergeSettings: 保存値を検証してデフォルトにフォール�
   });
 
   it("editorFontSize が範囲外(小さすぎる)ならデフォルトにフォールバックする", () => {
-    expect(mergeSettings({ editorFontSize: 9 }).editorFontSize).toBe(14);
+    expect(mergeSettings({ editorFontSize: 8 }).editorFontSize).toBe(14);
   });
 
   it("editorFontSize が範囲外(大きすぎる)ならデフォルトにフォールバックする", () => {
-    expect(mergeSettings({ editorFontSize: 25 }).editorFontSize).toBe(14);
+    expect(mergeSettings({ editorFontSize: 73 }).editorFontSize).toBe(14);
   });
 
-  it("editorFontSize の境界値(10, 24)は許容する", () => {
-    expect(mergeSettings({ editorFontSize: 10 }).editorFontSize).toBe(10);
-    expect(mergeSettings({ editorFontSize: 24 }).editorFontSize).toBe(24);
+  it("editorFontSize の境界値(9, 72)は許容する", () => {
+    expect(mergeSettings({ editorFontSize: 9 }).editorFontSize).toBe(9);
+    expect(mergeSettings({ editorFontSize: 72 }).editorFontSize).toBe(72);
   });
 
   it("editorFontSize が数値でない場合はデフォルトにフォールバックする", () => {
@@ -73,6 +80,27 @@ describe("mergeSettings: 保存値を検証してデフォルトにフォール�
 
   it("editorFontSize が NaN の場合はデフォルトにフォールバックする", () => {
     expect(mergeSettings({ editorFontSize: NaN }).editorFontSize).toBe(14);
+  });
+
+  it("previewFontSize が範囲外(小さすぎる)ならデフォルトにフォールバックする", () => {
+    expect(mergeSettings({ previewFontSize: 8 }).previewFontSize).toBe(16);
+  });
+
+  it("previewFontSize が範囲外(大きすぎる)ならデフォルトにフォールバックする", () => {
+    expect(mergeSettings({ previewFontSize: 73 }).previewFontSize).toBe(16);
+  });
+
+  it("previewFontSize の境界値(9, 72)は許容する", () => {
+    expect(mergeSettings({ previewFontSize: 9 }).previewFontSize).toBe(9);
+    expect(mergeSettings({ previewFontSize: 72 }).previewFontSize).toBe(72);
+  });
+
+  it("previewFontSize が数値でない場合はデフォルトにフォールバックする", () => {
+    expect(mergeSettings({ previewFontSize: "16" }).previewFontSize).toBe(16);
+  });
+
+  it("previewFontSize が NaN の場合はデフォルトにフォールバックする", () => {
+    expect(mergeSettings({ previewFontSize: NaN }).previewFontSize).toBe(16);
   });
 
   it("previewDebounceMs が範囲外(小さすぎる)ならデフォルトにフォールバックする", () => {
@@ -96,6 +124,7 @@ describe("mergeSettings: 保存値を検証してデフォルトにフォール�
     expect(mergeSettings({ theme: "dark", unknownKey: "何か" })).toEqual({
       theme: "dark",
       editorFontSize: 14,
+      previewFontSize: 16,
       previewDebounceMs: 300,
     });
   });

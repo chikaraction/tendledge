@@ -109,8 +109,8 @@ export function createSettingsDialog(
   fontSpan.textContent = "エディタのフォントサイズ (px)";
   const fontInput = document.createElement("input");
   fontInput.type = "number";
-  fontInput.min = "10";
-  fontInput.max = "24";
+  fontInput.min = "9";
+  fontInput.max = "72";
   fontInput.step = "1";
   fontInput.value = String(settings.editorFontSize);
   fontInput.addEventListener("change", () => {
@@ -122,6 +122,30 @@ export function createSettingsDialog(
   fontRow.appendChild(fontSpan);
   fontRow.appendChild(fontInput);
   form.appendChild(fontRow);
+
+  // --- プレビューのフォントサイズ ---
+  const previewFontRow = document.createElement("label");
+  previewFontRow.className = "settings-row";
+  const previewFontSpan = document.createElement("span");
+  previewFontSpan.textContent = "プレビューのフォントサイズ (px)";
+  const previewFontInput = document.createElement("input");
+  previewFontInput.type = "number";
+  previewFontInput.min = "9";
+  previewFontInput.max = "72";
+  previewFontInput.step = "1";
+  previewFontInput.value = String(settings.previewFontSize);
+  previewFontInput.addEventListener("change", () => {
+    const parsed = mergeSettings({
+      ...settings,
+      previewFontSize: previewFontInput.valueAsNumber,
+    });
+    settings = parsed;
+    previewFontInput.value = String(settings.previewFontSize);
+    onChange(settings);
+  });
+  previewFontRow.appendChild(previewFontSpan);
+  previewFontRow.appendChild(previewFontInput);
+  form.appendChild(previewFontRow);
 
   // --- プレビューのデバウンス ---
   const debounceRow = document.createElement("label");
@@ -163,6 +187,7 @@ export function createSettingsDialog(
       settings = { ...getCurrent() };
       themeSelect.value = settings.theme;
       fontInput.value = String(settings.editorFontSize);
+      previewFontInput.value = String(settings.previewFontSize);
       debounceInput.value = String(settings.previewDebounceMs);
       dialogEl.showModal();
     },

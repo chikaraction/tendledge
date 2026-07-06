@@ -11,14 +11,16 @@ export interface Settings {
   theme: Theme;
   /** エディタのフォントサイズ(px) */
   editorFontSize: number;
+  /** プレビューのフォントサイズ(px) */
+  previewFontSize: number;
   /** プレビュー再描画のデバウンス時間(ms) */
   previewDebounceMs: number;
 }
 
 const THEMES: readonly Theme[] = ["light", "dark", "system"];
 
-const FONT_SIZE_MIN = 10;
-const FONT_SIZE_MAX = 24;
+const FONT_SIZE_MIN = 9;
+const FONT_SIZE_MAX = 72;
 
 const DEBOUNCE_MS_MIN = 100;
 const DEBOUNCE_MS_MAX = 2000;
@@ -26,6 +28,7 @@ const DEBOUNCE_MS_MAX = 2000;
 export const DEFAULT_SETTINGS: Settings = {
   theme: "system",
   editorFontSize: 14,
+  previewFontSize: 16,
   previewDebounceMs: 300,
 };
 
@@ -51,6 +54,9 @@ export function mergeSettings(saved: unknown): Settings {
     editorFontSize: isNumberInRange(candidate.editorFontSize, FONT_SIZE_MIN, FONT_SIZE_MAX)
       ? candidate.editorFontSize
       : DEFAULT_SETTINGS.editorFontSize,
+    previewFontSize: isNumberInRange(candidate.previewFontSize, FONT_SIZE_MIN, FONT_SIZE_MAX)
+      ? candidate.previewFontSize
+      : DEFAULT_SETTINGS.previewFontSize,
     previewDebounceMs: isNumberInRange(
       candidate.previewDebounceMs,
       DEBOUNCE_MS_MIN,

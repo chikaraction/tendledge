@@ -259,6 +259,10 @@ function applySettings(settings: Settings): void {
     document.documentElement.setAttribute("data-theme", settings.theme);
   }
   document.documentElement.style.setProperty("--editor-font-size", `${settings.editorFontSize}px`);
+  document.documentElement.style.setProperty(
+    "--preview-font-size",
+    `${settings.previewFontSize}px`,
+  );
   preview.setDebounceMs(settings.previewDebounceMs);
 }
 

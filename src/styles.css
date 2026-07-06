@@ -16,6 +16,7 @@
   --error: #b0362c;
   --editor-ratio: 50%;
   --editor-font-size: 14px;
+  --preview-font-size: 16px;
   color-scheme: light dark;
 }
 
@@ -457,7 +458,7 @@ body {
   margin: 0 auto;
   padding: 2rem 2.2rem 4rem;
   line-height: 1.75;
-  font-size: 15.5px;
+  font-size: var(--preview-font-size, 16px);
 }
 
 .adoc h1,
