@@ -14,6 +14,12 @@
   --border: #e1e1e8;
   --accent: #6d5bd0;
   --error: #b0362c;
+  /* アドモニションの種類別カラー(伝統的な AsciiDoc/Font Awesome 配色に合わせる) */
+  --note-color: #2f80ed;
+  --tip-color: #d9a005;
+  --important-color: #e0393e;
+  --warning-color: #e08a1e;
+  --caution-color: #d8481e;
   --editor-ratio: 50%;
   --editor-font-size: 14px;
   --preview-font-size: 16px;
@@ -521,7 +527,7 @@ body {
   display: flex;
   gap: 0.8rem;
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--note-color);
   border-radius: 0 8px 8px 0;
   padding: 0.7rem 1rem;
   margin: 1em 0;
@@ -535,30 +541,57 @@ body {
 }
 
 .adoc .admonitionblock .icon {
-  font-weight: 700;
-  font-size: 0.8rem;
-  color: var(--accent);
-  white-space: nowrap;
-  padding-right: 0.8rem;
+  padding-right: 1.3rem;
+  margin-right: 0.4rem;
+  border-right: 1px solid var(--fg-muted);
 }
 
 .adoc .admonitionblock .icon .title {
   display: flex;
   align-items: center;
-  gap: 0.4em;
 }
 
-/* 注意を促す種類(IMPORTANT/WARNING/CAUTION)はエラー色で区別する */
-.adoc .admonitionblock.important,
-.adoc .admonitionblock.warning,
+.adoc .admonitionblock .content {
+  padding-left: 0.9rem;
+}
+
+/* アイコンは種類ごとの色で塗りつぶした丸バッジにし、中の絵柄は白抜きにする */
+.adoc .admonition-icon {
+  width: 1.3em;
+  height: 1.3em;
+  padding: 0.3em;
+  box-sizing: content-box;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--note-color);
+}
+
+.adoc .admonitionblock.tip {
+  border-left-color: var(--tip-color);
+}
+.adoc .admonitionblock.tip .admonition-icon {
+  background: var(--tip-color);
+}
+
+.adoc .admonitionblock.important {
+  border-left-color: var(--important-color);
+}
+.adoc .admonitionblock.important .admonition-icon {
+  background: var(--important-color);
+}
+
+.adoc .admonitionblock.warning {
+  border-left-color: var(--warning-color);
+}
+.adoc .admonitionblock.warning .admonition-icon {
+  background: var(--warning-color);
+}
+
 .adoc .admonitionblock.caution {
-  border-left-color: var(--error);
+  border-left-color: var(--caution-color);
 }
-
-.adoc .admonitionblock.important .icon,
-.adoc .admonitionblock.warning .icon,
-.adoc .admonitionblock.caution .icon {
-  color: var(--error);
+.adoc .admonitionblock.caution .admonition-icon {
+  background: var(--caution-color);
 }
 
 .adoc table:not(.admonitionblock table) {
@@ -597,6 +630,8 @@ body {
 }
 
 .adoc .footnote-icon {
+  width: 0.85em;
+  height: 0.85em;
   color: var(--accent);
   vertical-align: -0.05em;
   margin-right: 0.15em;

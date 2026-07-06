@@ -51,6 +51,21 @@ styles.css の CSS 変数を以下に差し替える。既存のテーマ機構
 | `--accent` | `#a78bfa` | アクティブ表示・リンク・フォーカス |
 | `--error` | `#e5766c` | エラー表示 |
 
+### アドモニション種類別カラー(ライト/ダーク共通)
+
+プレビューの `NOTE`/`TIP`/`IMPORTANT`/`WARNING`/`CAUTION` は、伝統的な
+AsciiDoc/Font Awesome の配色慣習に合わせた固有色を使う。テーマによらず
+同じ値(十分な彩度があり、ライト・ダークどちらの `--bg-subtle` 上でも
+白抜きアイコンとのコントラストが保てるため)。
+
+| 変数 | 値 | 用途 |
+| --- | --- | --- |
+| `--note-color` | `#2f80ed`(青) | NOTE のアイコン背景・左罫線 |
+| `--tip-color` | `#d9a005`(金) | TIP のアイコン背景・左罫線 |
+| `--important-color` | `#e0393e`(赤) | IMPORTANT のアイコン背景・左罫線 |
+| `--warning-color` | `#e08a1e`(橙) | WARNING のアイコン背景・左罫線 |
+| `--caution-color` | `#d8481e`(赤橙) | CAUTION のアイコン背景・左罫線 |
+
 ### ライト(淡色版)
 
 | 変数 | 値 |

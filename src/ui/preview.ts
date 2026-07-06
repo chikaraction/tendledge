@@ -97,7 +97,9 @@ export function createPreview(opts: {
       );
       const title = block.querySelector<HTMLElement>("td.icon .title");
       if (!type || !title) return;
-      title.prepend(icon(ADMONITION_ICONS[type], 16, "admonition-icon"));
+      const svg = icon(ADMONITION_ICONS[type], 16, "admonition-icon");
+      svg.setAttribute("title", title.textContent ?? "");
+      title.replaceChildren(svg);
     });
   }
 
