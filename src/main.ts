@@ -9,12 +9,19 @@ import { createDocumentStore } from "./core/documents";
 import { basename, joinPath, suggestedExportName } from "./core/paths";
 import { resolveImagePath } from "./core/preview-links";
 import { DEFAULT_SETTINGS, type Settings, type Theme } from "./core/settings";
+import {
+  createViewModeState,
+  setMode,
+  togglePreview,
+  toggleSplit,
+  type ViewModeState,
+} from "./core/view-mode";
 import { buildVaultTree, type RawEntry } from "./core/vault-tree";
-import { convertToStandaloneHtml } from "./render";
 import { sampleDoc } from "./sample-doc";
 import { setupDivider } from "./ui/divider";
-import { createEditor } from "./ui/editor";
+import { createEditor, editorScrollToLine, editorTopLine } from "./ui/editor";
 import { createFileTree } from "./ui/file-tree";
+import { buildExportHtml } from "./ui/html-export";
 import { icon, icons } from "./ui/icons";
 import { createMenubar } from "./ui/menubar";
 import { createPreview } from "./ui/preview";
@@ -29,13 +36,15 @@ import {
 import { setupShortcuts } from "./ui/shortcuts";
 import { createStatusbar } from "./ui/statusbar";
 import { renderTabs } from "./ui/tabs";
+import { createViewModeControls } from "./ui/view-mode";
 
 // ---------------------------------------------------------------------------
 // DOM 要素
 // ---------------------------------------------------------------------------
 const previewEl = document.getElementById("preview")!;
 const previewPaneEl = document.getElementById("preview-pane")!;
-const tabbarEl = document.getElementById("tabbar")!;
+const tabbarTabsEl = document.getElementById("tabbar-tabs")!;
+const tabbarActionsEl = document.getElementById("tabbar-actions")!;
 const sidebarEl = document.getElementById("sidebar")!;
 const vaultNameEl = document.getElementById("vault-name")!;
 
@@ -88,7 +97,7 @@ function syncStatusbarFromView(): void {
 }
 
 function updateTabs(): void {
-  renderTabs(tabbarEl, store.list(), store.activeDoc().id, store.isDirty, {
+  renderTabs(tabbarTabsEl, store.list(), store.activeDoc().id, store.isDirty, {
     onActivate: activateTab,
     onClose: (id) => void closeTab(id),
   });
@@ -184,6 +193,42 @@ view.focus();
 
 setupDivider(document.getElementById("workspace")!, document.getElementById("divider")!);
 setupScrollSync(view, preview);
+
+// ---------------------------------------------------------------------------
+// 表示モード(エディタのみ / 分割 / プレビューのみ。ウィンドウ単位で1つ)
+// ---------------------------------------------------------------------------
+let viewModeState = createViewModeState();
+
+const viewModeControls = createViewModeControls(
+  tabbarActionsEl,
+  document.getElementById("workspace")!,
+  {
+    onToggleSplit: () => applyViewMode(toggleSplit(viewModeState)),
+    onTogglePreview: () => applyViewMode(togglePreview(viewModeState)),
+  },
+);
+viewModeControls.render(viewModeState);
+
+/** モード切替で再表示されたペインを、もう一方の現在位置に合わせて一度だけスクロール同期する */
+function syncScrollOnModeChange(previousMode: ViewModeState["mode"], nextMode: ViewModeState["mode"]): void {
+  if (previousMode === nextMode) return;
+  if (previousMode === "editor" && nextMode !== "editor") {
+    // プレビューが再表示された: エディタの現在位置に合わせる
+    preview.paneEl.scrollTop = preview.scrollTopForLine(editorTopLine(view), view.state.doc.lines);
+  } else if (previousMode === "preview" && nextMode !== "preview") {
+    // エディタが再表示された: プレビューだけ読み進めた位置を引き継ぐ
+    editorScrollToLine(view, preview.lineForScrollTop(preview.paneEl.scrollTop, view.state.doc.lines));
+  }
+}
+
+function applyViewMode(next: ViewModeState): void {
+  const previousMode = viewModeState.mode;
+  viewModeState = next;
+  viewModeControls.render(viewModeState);
+  menubar.refresh();
+  syncScrollOnModeChange(previousMode, viewModeState.mode);
+}
+
 setupPreviewLinks({
   paneEl: previewPaneEl,
   currentDocPath: () => store.activeDoc().path,
@@ -253,7 +298,7 @@ async function doSaveAs(): Promise<void> {
 // HTML / PDF エクスポート
 // ---------------------------------------------------------------------------
 async function exportHtml(): Promise<void> {
-  const html = convertToStandaloneHtml(view.state.doc.toString());
+  const html = buildExportHtml(view.state.doc.toString());
   const path = await save({
     filters: [{ name: "HTML", extensions: ["html"] }],
     defaultPath: suggestedExportName(store.activeDoc().path, "html"),
@@ -342,8 +387,17 @@ const menubar = createMenubar(document.getElementById("menubar")!, [
       { label: "保存", shortcut: "Ctrl+S", onSelect: () => void doSave() },
       { label: "名前を付けて保存...", shortcut: "Ctrl+Shift+S", onSelect: () => void doSaveAs() },
       "separator",
-      { label: "HTML としてエクスポート...", onSelect: () => void exportHtml() },
-      { label: "PDF / 印刷...", shortcut: "Ctrl+P", onSelect: exportPdf },
+      {
+        label: "HTML としてエクスポート...",
+        title: "現在のテーマ設定に関わらず、常にライト配色で出力されます",
+        onSelect: () => void exportHtml(),
+      },
+      {
+        label: "PDF / 印刷...",
+        shortcut: "Ctrl+P",
+        title: "現在のテーマ設定に関わらず、常にライト配色で出力されます",
+        onSelect: exportPdf,
+      },
       "separator",
       { label: "設定...", onSelect: () => settingsDialog?.open() },
     ],
@@ -358,6 +412,24 @@ const menubar = createMenubar(document.getElementById("menubar")!, [
         onSelect: () => {
           sidebarEl.hidden = !sidebarEl.hidden;
         },
+      },
+      "separator",
+      {
+        label: "エディタのみ",
+        checked: () => viewModeState.mode === "editor",
+        onSelect: () => applyViewMode(setMode(viewModeState, "editor")),
+      },
+      {
+        label: "分割",
+        shortcut: "Ctrl+K V",
+        checked: () => viewModeState.mode === "split",
+        onSelect: () => applyViewMode(setMode(viewModeState, "split")),
+      },
+      {
+        label: "プレビューのみ",
+        shortcut: "Ctrl+Shift+V",
+        checked: () => viewModeState.mode === "preview",
+        onSelect: () => applyViewMode(setMode(viewModeState, "preview")),
       },
       "separator",
       {
@@ -398,4 +470,6 @@ setupShortcuts({
     const nextId = store.activeDoc().id;
     if (nextId !== previousId) switchEditorTo(nextId, previousId);
   },
+  onToggleSplit: () => applyViewMode(toggleSplit(viewModeState)),
+  onTogglePreview: () => applyViewMode(togglePreview(viewModeState)),
 });

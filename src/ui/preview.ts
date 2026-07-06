@@ -6,7 +6,8 @@ import {
   editorLineForPreviewScrollTop,
   previewScrollTopForLine,
 } from "../core/scroll-sync";
-import { icon, icons } from "./icons";
+import { decorateAdmonitionIcons } from "./admonition-icons";
+import { decorateChecklists } from "./checklist-decoration";
 import { convertToPreviewHtml, sanitizePreviewHtml } from "../render";
 
 export interface PreviewController {
@@ -81,63 +82,13 @@ export function createPreview(opts: {
     });
   }
 
-  // チェックリスト(* [x] / * [ ])の先頭グリフをチェックボックスに置き換える。
-  // Asciidoctor.js は ✓(U+2713)/ ❏(U+2751)の文字を出すだけで、❏ は影付きの
-  // グリフで違和感があり、完了側もチェックボックスには見えないため。
-  const CHECK_GLYPHS: Record<string, boolean> = {
-    "✓": true, // ✓(&#10003;)
-    "❏": false, // ❏(&#10063;)
-  };
-
-  function decorateChecklists(): void {
-    const items = previewEl.querySelectorAll<HTMLElement>("ul.checklist > li > p");
-    items.forEach((p) => {
-      const text = p.firstChild;
-      if (text?.nodeType !== Node.TEXT_NODE || !text.textContent) return;
-      const glyph = text.textContent[0];
-      if (!(glyph in CHECK_GLYPHS)) return;
-      text.textContent = text.textContent.slice(1).trimStart();
-      const box = document.createElement("input");
-      box.type = "checkbox";
-      box.disabled = true;
-      box.checked = CHECK_GLYPHS[glyph];
-      box.className = "task-checkbox";
-      p.prepend(box);
-    });
-  }
-
-  // アドモニション(NOTE/TIP/IMPORTANT/WARNING/CAUTION)のラベルに種類別の
-  // Lucide アイコンを付ける。Asciidoctor.js のデフォルト出力は
-  // td.icon > .title に "Note" 等のテキストを置くだけなので、その前に差し込む。
-  const ADMONITION_ICONS = {
-    note: icons.note,
-    tip: icons.tip,
-    important: icons.important,
-    warning: icons.warning,
-    caution: icons.caution,
-  } as const;
-
-  function decorateAdmonitions(): void {
-    const blocks = previewEl.querySelectorAll<HTMLElement>(".admonitionblock");
-    blocks.forEach((block) => {
-      const type = (Object.keys(ADMONITION_ICONS) as (keyof typeof ADMONITION_ICONS)[]).find(
-        (t) => block.classList.contains(t),
-      );
-      const title = block.querySelector<HTMLElement>("td.icon .title");
-      if (!type || !title) return;
-      const svg = icon(ADMONITION_ICONS[type], 16, "admonition-icon");
-      svg.setAttribute("title", title.textContent ?? "");
-      title.replaceChildren(svg);
-    });
-  }
-
   function render(source: string): void {
     const start = performance.now();
     try {
       previewEl.innerHTML = sanitizePreviewHtml(convertToPreviewHtml(source));
       decorateImages();
-      decorateChecklists();
-      decorateAdmonitions();
+      decorateChecklists(previewEl);
+      decorateAdmonitionIcons(previewEl);
       rebuildHeadingAnchors(source);
       statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;
       statusEl.classList.remove("error");

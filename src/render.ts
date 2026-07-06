@@ -35,11 +35,17 @@ export function sanitizePreviewHtml(html: string): string {
  * エクスポート用のスタンドアロン HTML(ヘッダ・スタイル込み)に変換する。
  * こちらは意図的にサニタイズしない: 自分の文書のパススルーを壊さないため。
  * 出力先はプレーンな HTML ファイルで、Tauri API には触れない。
+ *
+ * stylesheet: false — @asciidoctor/core のブラウザビルドは既定でデフォルト CSS を
+ * 同期 XHR(Opal ランタイムのポリフィル)で読み込もうとするが、Vite の dev/preview
+ * サーバーは存在しないパスへの GET を index.html にフォールバックさせるため、
+ * その HTML がまるごと <style> に誤って埋め込まれてしまう。この同期読み込み自体を止める
+ * (どのみち ui/html-export.ts が .adoc スコープの CSS を別途埋め込むので不要)。
  */
 export function convertToStandaloneHtml(source: string): string {
   return asciidoctor.convert(source, {
     safe: "safe",
     standalone: true,
-    attributes: BASE_ATTRIBUTES,
+    attributes: { ...BASE_ATTRIBUTES, stylesheet: false },
   }) as string;
 }
