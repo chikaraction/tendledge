@@ -4,6 +4,27 @@ import DOMPurify from "dompurify";
 
 const asciidoctor = Asciidoctor();
 
+// [mermaid] ブロックを [source,mermaid] と同一の出力に正規化する拡張。
+// 素の Asciidoctor では [mermaid] スタイルは HTML に痕跡を残さない
+// (ただの listingblock になり class も data 属性も付かない)ことを実測で確認済み。
+// 正規化により後段(プレビューの図レンダリング・エクスポート焼き込み)は
+// code[data-lang="mermaid"] の1経路だけを見ればよくなる。
+// グローバル登録なのは、Extensions.create() の registry を convert に渡す方式だと
+// 最初の1回しか拡張が効かない(2回目から黙って素通しになる)ことを実測したため。
+asciidoctor.Extensions.register(function () {
+  this.block(function () {
+    this.named("mermaid");
+    this.onContexts("listing", "literal");
+    this.parseContentAs("raw");
+    this.process(function (parent, reader) {
+      return this.createBlock(parent, "listing", reader.getLines().join("\n"), {
+        style: "source",
+        language: "mermaid",
+      });
+    });
+  });
+});
+
 const BASE_ATTRIBUTES = {
   showtitle: true, // 文書タイトル(= 見出し)をプレビューに表示
   sectnums: false,
