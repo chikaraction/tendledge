@@ -35,7 +35,8 @@ CAUTION: これは慎重な対応が必要なことを示します。
 
 組み込み属性の例:
 
-* 半角スペース(改行させたくない箇所): AsciiDoc{sp}Editor
+* 半角スペース: AsciiDoc{sp}Editor
+* ノーブレークスペース(改行させたくない箇所): AsciiDoc{nbsp}Editor
 * コピーライト記号: Copyright {copy} 2026
 
 == コメントブロック
