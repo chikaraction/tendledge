@@ -492,36 +492,30 @@ body {
    フォントサイズを本文分大きくしたときに見出しの方が追従せず、本文より
    見出しが小さくなる逆転が起きるため。 */
 .adoc h1 {
-  font-size: 1.7em;
-  margin-top: 0.4em;
+  font-size: 2.75em;
 }
 
 .adoc h2 {
-  font-size: 1.3em;
-  padding-bottom: 0.25em;
-  border-bottom: 1px solid var(--border);
+  font-size: 2.3125em;
 }
 
 .adoc h3 {
-  font-size: 1.1em;
+  font-size: 1.6875em;
 }
 
 /* h4〜h6 は AsciiDoc(====〜======)としては使えるが本文サイズ以下には
    縮めない(見出しが本文より小さく見えるのは違和感が強いため)。
    代わりにサイズをわずかに残しつつ、色・スタイルで階層を示す。 */
 .adoc h4 {
-  font-size: 1.05em;
+  font-size: 1.4375em;
 }
 
 .adoc h5 {
-  font-size: 1em;
-  color: var(--fg-muted);
+  font-size: 1.225em;
 }
 
 .adoc h6 {
   font-size: 1em;
-  color: var(--fg-muted);
-  font-style: italic;
 }
 
 .adoc a {
