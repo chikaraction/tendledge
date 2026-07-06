@@ -31,14 +31,26 @@ export function createEditor(opts: {
     EditorView.theme({
       "&": { backgroundColor: "var(--bg)", color: "var(--fg)" },
       ".cm-content": { caretColor: "var(--fg)" },
+      // CodeMirror の既定 CSS(&light/&dark 前提のセレクタ)は、dark:true を
+      // 渡していないこのテーマ設定では発火しない。加えて "&light.cm-focused > ..."
+      // のような複合セレクタは詳細度が高く、素の ".cm-cursor" / ".cm-selectionBackground"
+      // 指定だけでは負けて黒いカーソル・既定の薄いグレーの選択色のまま上書きされない。
+      // 同じ構造のセレクタで明示的に上書きする。
+      ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--fg)" },
       ".cm-gutters": {
         backgroundColor: "var(--bg-subtle)",
         color: "var(--fg-muted)",
         border: "none",
       },
-      ".cm-activeLine": { backgroundColor: "var(--bg-subtle)" },
+      // アクティブ行の背景を不透明にすると、背面レイヤーに描かれる選択ハイライトを
+      // カーソル行だけ覆い隠してしまう(同一行内の選択が見えなくなる)ため半透明にする。
+      ".cm-activeLine": { backgroundColor: "color-mix(in srgb, var(--fg) 5%, transparent)" },
       ".cm-activeLineGutter": { backgroundColor: "var(--bg-raised)" },
-      ".cm-selectionBackground, ::selection": { backgroundColor: "var(--accent)" },
+      ".cm-selectionBackground": { backgroundColor: "var(--accent)" },
+      "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
+        backgroundColor: "var(--accent)",
+      },
+      "::selection": { backgroundColor: "var(--accent)" },
     }),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
