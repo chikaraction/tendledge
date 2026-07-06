@@ -12,5 +12,6 @@
 * link:04-tables.adoc[表(テーブル)]
 * link:05-links-and-media.adoc[リンク・画像・相互参照・脚注]
 * link:06-admonitions-and-attributes.adoc[アドモニション・属性・コメント]
+* link:07-diagrams.adoc[作図(Mermaid)]
 
 TIP: 左のエディタで各ファイルを編集すると、右のプレビューに即座に反映されます。
