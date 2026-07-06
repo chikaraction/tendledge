@@ -68,6 +68,31 @@ export function createPreview(opts: {
     return Math.max(0, paneEl.scrollHeight - paneEl.clientHeight);
   }
 
+  // チェックリスト(* [x] / * [ ])の先頭グリフをチェックボックスに置き換える。
+  // Asciidoctor.js は ✓(U+2713)/ ❏(U+2751)の文字を出すだけで、❏ は影付きの
+  // グリフで違和感があり、完了側もチェックボックスには見えないため。
+  const CHECK_GLYPHS: Record<string, boolean> = {
+    "✓": true, // ✓(&#10003;)
+    "❏": false, // ❏(&#10063;)
+  };
+
+  function decorateChecklists(): void {
+    const items = previewEl.querySelectorAll<HTMLElement>("ul.checklist > li > p");
+    items.forEach((p) => {
+      const text = p.firstChild;
+      if (text?.nodeType !== Node.TEXT_NODE || !text.textContent) return;
+      const glyph = text.textContent[0];
+      if (!(glyph in CHECK_GLYPHS)) return;
+      text.textContent = text.textContent.slice(1).trimStart();
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.disabled = true;
+      box.checked = CHECK_GLYPHS[glyph];
+      box.className = "task-checkbox";
+      p.prepend(box);
+    });
+  }
+
   // アドモニション(NOTE/TIP/IMPORTANT/WARNING/CAUTION)のラベルに種類別の
   // Lucide アイコンを付ける。Asciidoctor.js のデフォルト出力は
   // td.icon > .title に "Note" 等のテキストを置くだけなので、その前に差し込む。
@@ -97,6 +122,7 @@ export function createPreview(opts: {
     const start = performance.now();
     try {
       previewEl.innerHTML = sanitizePreviewHtml(convertToPreviewHtml(source));
+      decorateChecklists();
       decorateAdmonitions();
       rebuildHeadingAnchors(source);
       statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;
