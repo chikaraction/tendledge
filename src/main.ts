@@ -319,7 +319,7 @@ async function doSaveAs(): Promise<void> {
 // HTML / PDF エクスポート
 // ---------------------------------------------------------------------------
 async function exportHtml(): Promise<void> {
-  const html = buildExportHtml(view.state.doc.toString());
+  const html = await buildExportHtml(view.state.doc.toString());
   const path = await save({
     filters: [{ name: "HTML", extensions: ["html"] }],
     defaultPath: suggestedExportName(store.activeDoc().path, "html"),

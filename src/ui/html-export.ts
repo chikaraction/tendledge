@@ -9,6 +9,7 @@ import { extractLightAdocCss } from "../core/export-css";
 import { convertToStandaloneHtml } from "../render";
 import { decorateAdmonitionIcons } from "./admonition-icons";
 import { decorateChecklists } from "./checklist-decoration";
+import { renderMermaidBlocks } from "./mermaid";
 
 // 抽出した .adoc ルールは var(--bg) 等を参照するだけで、ページ全体(html/body)の
 // 背景・文字色は自分では確定させない。素の Asciidoctor 出力は body に背景/文字色を
@@ -27,12 +28,17 @@ body {
 }`;
 
 /** アドモニションアイコン等を装飾し、プレビューと見た目・構成を揃えたスタンドアロン HTML を作る */
-export function buildExportHtml(source: string): string {
+export async function buildExportHtml(source: string): Promise<string> {
   const html = convertToStandaloneHtml(source);
   const doc = new DOMParser().parseFromString(html, "text/html");
 
   decorateAdmonitionIcons(doc);
   decorateChecklists(doc);
+
+  // mermaid 図を SVG に焼き込む(スクリプト同梱なし・開くだけで表示)。
+  // エクスポートはライト固定なので default テーマで描く。焼き込む SVG 自体は
+  // renderMermaidBlocks 内で sanitizeMermaidSvg を通る(パススルー等の他要素には触れない)。
+  await renderMermaidBlocks(doc, "default");
 
   // ライブプレビューは :author: があってもタイトルのみでバイラインを出さないため、
   // standalone: true が自動生成する著者バイラインを削除して挙動を揃える
