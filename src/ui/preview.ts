@@ -7,6 +7,7 @@ import {
   previewScrollTopForLine,
 } from "../core/scroll-sync";
 import { decorateAdmonitionIcons } from "./admonition-icons";
+import { decorateChecklists } from "./checklist-decoration";
 import { convertToPreviewHtml, sanitizePreviewHtml } from "../render";
 
 export interface PreviewController {
@@ -81,37 +82,12 @@ export function createPreview(opts: {
     });
   }
 
-  // チェックリスト(* [x] / * [ ])の先頭グリフをチェックボックスに置き換える。
-  // Asciidoctor.js は ✓(U+2713)/ ❏(U+2751)の文字を出すだけで、❏ は影付きの
-  // グリフで違和感があり、完了側もチェックボックスには見えないため。
-  const CHECK_GLYPHS: Record<string, boolean> = {
-    "✓": true, // ✓(&#10003;)
-    "❏": false, // ❏(&#10063;)
-  };
-
-  function decorateChecklists(): void {
-    const items = previewEl.querySelectorAll<HTMLElement>("ul.checklist > li > p");
-    items.forEach((p) => {
-      const text = p.firstChild;
-      if (text?.nodeType !== Node.TEXT_NODE || !text.textContent) return;
-      const glyph = text.textContent[0];
-      if (!(glyph in CHECK_GLYPHS)) return;
-      text.textContent = text.textContent.slice(1).trimStart();
-      const box = document.createElement("input");
-      box.type = "checkbox";
-      box.disabled = true;
-      box.checked = CHECK_GLYPHS[glyph];
-      box.className = "task-checkbox";
-      p.prepend(box);
-    });
-  }
-
   function render(source: string): void {
     const start = performance.now();
     try {
       previewEl.innerHTML = sanitizePreviewHtml(convertToPreviewHtml(source));
       decorateImages();
-      decorateChecklists();
+      decorateChecklists(previewEl);
       decorateAdmonitionIcons(previewEl);
       rebuildHeadingAnchors(source);
       statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;
