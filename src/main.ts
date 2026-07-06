@@ -5,6 +5,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { readDir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { resolveMermaidTheme } from "./core/diagram";
 import { createDocumentStore } from "./core/documents";
 import { basename, joinPath, suggestedExportName } from "./core/paths";
 import { resolveImagePath } from "./core/preview-links";
@@ -50,6 +51,13 @@ const vaultNameEl = document.getElementById("vault-name")!;
 
 const statusbar = createStatusbar(document.getElementById("statusbar")!);
 
+// 「いま適用されている設定」の唯一の置き場。ダイアログとメニューバーの両方から
+// updateSettings() 経由で更新される。プレビューの初期描画(モジュール評価中)が
+// mermaid テーマ解決で参照するため、配線より前に宣言しておく必要がある。
+let currentSettings: Settings = { ...DEFAULT_SETTINGS };
+// テーマ "system" のときの実効テーマ判定(mermaid 図のテーマ解決に使う)
+const prefersDarkMedia = window.matchMedia("(prefers-color-scheme: dark)");
+
 // ---------------------------------------------------------------------------
 // ドキュメント(タブ)状態とエディタ
 // ---------------------------------------------------------------------------
@@ -72,6 +80,8 @@ const preview = createPreview({
       return undefined;
     }
   },
+  // mermaid の配色は SVG に焼き込まれるため、描画時点の実効テーマを毎回解決する
+  mermaidTheme: () => resolveMermaidTheme(currentSettings.theme, prefersDarkMedia.matches),
 });
 
 const editor = createEditor({
@@ -316,9 +326,7 @@ function exportPdf(): void {
 // ---------------------------------------------------------------------------
 // 設定(テーマ・エディタのフォントサイズ・プレビューのデバウンス)
 // ---------------------------------------------------------------------------
-// 「いま適用されている設定」の唯一の置き場。ダイアログとメニューバーの両方から
-// updateSettings() 経由で更新される。
-let currentSettings: Settings = { ...DEFAULT_SETTINGS };
+// currentSettings の宣言はファイル冒頭(プレビュー配線の前)にある
 let settingsDialog: SettingsDialogController | undefined;
 
 /** 設定を DOM/プレビューへ適用する(見た目・挙動の反映のみ。保存はしない) */

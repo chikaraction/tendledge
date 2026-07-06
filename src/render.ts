@@ -53,6 +53,18 @@ export function sanitizePreviewHtml(html: string): string {
 }
 
 /**
+ * mermaid が生成した SVG を挿入前にサニタイズする(多層防御)。
+ * 入力はサニタイズ済み DOM の textContent 起点なので理論上は安全だが、
+ * mermaid 側の脆弱性への保険として SVG プロファイルで通す。
+ * mermaid の配色は SVG 内の <style> に載っており、SVG プロファイルは
+ * <style> を残し foreignObject / script / イベント属性を落とすことを
+ * テストで固定している(htmlLabels を無効化して foreignObject に依存しない)。
+ */
+export function sanitizeMermaidSvg(svg: string): string {
+  return DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
+}
+
+/**
  * エクスポート用のスタンドアロン HTML(ヘッダ・スタイル込み)に変換する。
  * こちらは意図的にサニタイズしない: 自分の文書のパススルーを壊さないため。
  * 出力先はプレーンな HTML ファイルで、Tauri API には触れない。

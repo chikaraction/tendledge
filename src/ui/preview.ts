@@ -6,8 +6,10 @@ import {
   editorLineForPreviewScrollTop,
   previewScrollTopForLine,
 } from "../core/scroll-sync";
+import type { MermaidTheme } from "../core/diagram";
 import { decorateAdmonitionIcons } from "./admonition-icons";
 import { decorateChecklists } from "./checklist-decoration";
+import { renderMermaidBlocks } from "./mermaid";
 import { convertToPreviewHtml, sanitizePreviewHtml } from "../render";
 
 export interface PreviewController {
@@ -36,8 +38,10 @@ export function createPreview(opts: {
   debounceMs?: number;
   /** 相対パス画像の src を表示可能な URL に解決する(不要なら undefined を返す) */
   resolveImageSrc?: (src: string) => string | undefined;
+  /** mermaid 図に使うテーマの提供元(未指定なら図はコードブロックのまま表示) */
+  mermaidTheme?: () => MermaidTheme;
 }): PreviewController {
-  const { previewEl, paneEl, statusEl, resolveImageSrc } = opts;
+  const { previewEl, paneEl, statusEl, resolveImageSrc, mermaidTheme } = opts;
   let debounceMs = opts.debounceMs ?? 300;
 
   // ソースの見出し行とプレビューの h1〜h6 を出現順で対応付ける。
@@ -82,14 +86,35 @@ export function createPreview(opts: {
     });
   }
 
+  // mermaid のレンダリングは非同期(初回は本体の遅延ロードも走る)ため、
+  // 描画のたびに世代を進め、完了時に世代が古くなっていた結果は捨てる。
+  // 古い世代の DOM 操作自体は innerHTML 差し替えで切り離された要素に
+  // 向かうので実害はなく、ガードすべきはアンカー再構築だけ。
+  let renderGeneration = 0;
+
+  async function decorateMermaid(source: string, generation: number): Promise<void> {
+    if (!mermaidTheme) return;
+    try {
+      const rendered = await renderMermaidBlocks(previewEl, mermaidTheme());
+      if (!rendered || generation !== renderGeneration) return;
+      // 図の挿入で要素の高さが変わるので、スクロール同期のアンカーを取り直す
+      rebuildHeadingAnchors(source);
+    } catch (err) {
+      // 図のレンダリング失敗でプレビュー全体は壊さない
+      console.error(err);
+    }
+  }
+
   function render(source: string): void {
     const start = performance.now();
     try {
+      const generation = ++renderGeneration;
       previewEl.innerHTML = sanitizePreviewHtml(convertToPreviewHtml(source));
       decorateImages();
       decorateChecklists(previewEl);
       decorateAdmonitionIcons(previewEl);
       rebuildHeadingAnchors(source);
+      void decorateMermaid(source, generation);
       statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;
       statusEl.classList.remove("error");
     } catch (err) {
