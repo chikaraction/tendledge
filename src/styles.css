@@ -15,8 +15,11 @@
   --accent: #6d5bd0;
   --error: #b0362c;
   /* コード面(インラインコード・コードブロックの背景)。ダークでは地より
-     「明るい」面にしないと本文背景と判別できないため、bg-subtle とは分離する */
-  --code-bg: #f4f4f7;
+     「明るい」面にしないと本文背景と判別できないため、bg-subtle とは分離する。
+     ライトも bg-subtle と同値にすると、表のゼブラ縞(偶数行 = bg-subtle)の
+     中にコードブロックが入ったとき(セル演算子 a| 等)に境界が消えるため、
+     bg-raised と同値にして区別する */
+  --code-bg: #ececf1;
   /* アドモニションの種類別カラー(伝統的な AsciiDoc/Font Awesome 配色に合わせる) */
   --note-color: #2f80ed;
   --tip-color: #d9a005;
@@ -737,7 +740,7 @@ body {
     --fg-muted: #6f6f7e;
     --border: #e1e1e8;
     --accent: #6d5bd0;
-    --code-bg: #f4f4f7;
+    --code-bg: #ececf1;
   }
 
   #menubar-row,

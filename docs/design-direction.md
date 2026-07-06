@@ -79,7 +79,7 @@ AsciiDoc/Font Awesome の配色慣習に合わせた固有色を使う。テー�
 | `--border` | `#e1e1e8` |
 | `--accent` | `#6d5bd0`(ライト地でのコントラスト確保のため濃いめ) |
 | `--error` | `#b0362c` |
-| `--code-bg` | `#f4f4f7`(ライトでは bg-subtle と同値でよい) |
+| `--code-bg` | `#ececf1`(bg-raised と同値。bg-subtle と同値にすると表のゼブラ縞と衝突するため分離) |
 
 ### タイポグラフィ・その他
 
