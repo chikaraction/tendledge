@@ -2,11 +2,19 @@
 // タブ切替のために「同じ拡張セットで EditorState を作り直す」機能を持つ
 // (EditorState をタブごとに保持すれば undo 履歴やカーソル位置もタブごとに保たれる)。
 import { indentWithTab } from "@codemirror/commands";
-import { StreamLanguage } from "@codemirror/language";
+import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
 import { EditorState, type Extension } from "@codemirror/state";
 import { keymap } from "@codemirror/view";
 import { basicSetup, EditorView } from "codemirror";
+import { tags } from "@lezer/highlight";
 import { asciidocMode } from "../asciidoc-mode";
+
+// basicSetup 既定の defaultHighlightStyle は見出し(tags.heading)に下線を付ける。
+// AsciiDoc の "=" 見出し行に下線は不要なので、太字だけの非フォールバック
+// HighlightStyle で上書きする(fallback ではない方が優先されるため既定の下線が消える)。
+const headingHighlight = syntaxHighlighting(
+  HighlightStyle.define([{ tag: tags.heading, fontWeight: "700" }]),
+);
 
 export interface EditorController {
   view: EditorView;
@@ -25,6 +33,7 @@ export function createEditor(opts: {
     basicSetup,
     keymap.of([indentWithTab]),
     StreamLanguage.define(asciidocMode),
+    headingHighlight,
     EditorView.lineWrapping,
     // CodeMirror の既定テーマは常に light 配色なので、Slate のデザイントークン
     // (CSS 変数)で上書きする。ダークテーマ時に行番号ガター等が白いままになるのを防ぐ。

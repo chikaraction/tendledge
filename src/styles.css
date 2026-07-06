@@ -479,7 +479,9 @@ body {
 .adoc h1,
 .adoc h2,
 .adoc h3,
-.adoc h4 {
+.adoc h4,
+.adoc h5,
+.adoc h6 {
   line-height: 1.35;
   margin: 1.6em 0 0.6em;
   font-weight: 650;
@@ -498,6 +500,19 @@ body {
 
 .adoc h3 {
   font-size: 1.1rem;
+}
+
+/* h4〜h6 は AsciiDoc(====〜======)としては使えるが本文サイズ以下には
+   縮めない(見出しが本文より小さく見えるのは違和感が強いため)。
+   代わりに色で階層を示す。 */
+.adoc h4 {
+  font-size: 1rem;
+}
+
+.adoc h5,
+.adoc h6 {
+  font-size: 1rem;
+  color: var(--fg-muted);
 }
 
 .adoc a {
