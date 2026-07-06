@@ -11,6 +11,8 @@ export interface MenuItemDef {
   onSelect: () => void;
   /** チェックマーク表示(テーマ選択・サイドバー表示状態など) */
   checked?: () => boolean;
+  /** ホバー時のツールチップ(補足説明が必要な項目のみ) */
+  title?: string;
 }
 
 export type MenuEntryDef = MenuItemDef | "separator";
@@ -42,6 +44,7 @@ export function createMenubar(container: HTMLElement, menus: MenuDef[]): Menubar
         const item = document.createElement("button");
         item.className = "menu-item";
         item.setAttribute("role", "menuitem");
+        if (entry.title) item.title = entry.title;
 
         const check = document.createElement("span");
         check.className = "menu-check";
