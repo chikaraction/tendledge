@@ -54,6 +54,65 @@ stateDiagram-v2
   保存済み --> [*]
 ----
 
+== クラス図
+
+[mermaid]
+----
+classDiagram
+  class Document {
+    +String title
+    +String path
+    +Boolean dirty
+    +save()
+  }
+  class Tab
+  Document "1" o-- "1" Tab : 表示
+  Document <|-- AsciiDocFile
+----
+
+== ER 図
+
+[mermaid]
+----
+erDiagram
+  VAULT ||--o{ FILE : contains
+  FILE ||--|{ TAB : opens
+  VAULT {
+    string path
+    string name
+  }
+  FILE {
+    string path
+    string extension
+  }
+----
+
+== ガントチャート
+
+[mermaid]
+----
+gantt
+  title 開発スケジュール
+  dateFormat YYYY-MM-DD
+  section 設計
+  要件定義 :done, a1, 2026-07-01, 2d
+  設計文書 :active, a2, after a1, 3d
+  section 実装
+  実装 :a3, after a2, 5d
+  検証 :a4, after a3, 2d
+----
+
+== 円グラフ
+
+[mermaid]
+----
+pie title 記法の使用割合
+  "見出し・段落" : 40
+  "リスト" : 25
+  "表" : 20
+  "コード" : 15
+----
+
 == テーマ追従
 
 図の配色は、アプリのテーマ(ライト / ダーク / システムに合わせる)に自動で
