@@ -487,32 +487,41 @@ body {
   font-weight: 650;
 }
 
+/* 見出しのサイズは em(.adoc 自身の font-size = --preview-font-size からの相対値)
+   にする。rem(ドキュメントルート基準の固定値)だと、設定でプレビューの
+   フォントサイズを本文分大きくしたときに見出しの方が追従せず、本文より
+   見出しが小さくなる逆転が起きるため。 */
 .adoc h1 {
-  font-size: 1.7rem;
+  font-size: 1.7em;
   margin-top: 0.4em;
 }
 
 .adoc h2 {
-  font-size: 1.3rem;
+  font-size: 1.3em;
   padding-bottom: 0.25em;
   border-bottom: 1px solid var(--border);
 }
 
 .adoc h3 {
-  font-size: 1.1rem;
+  font-size: 1.1em;
 }
 
 /* h4〜h6 は AsciiDoc(====〜======)としては使えるが本文サイズ以下には
    縮めない(見出しが本文より小さく見えるのは違和感が強いため)。
-   代わりに色で階層を示す。 */
+   代わりにサイズをわずかに残しつつ、色・スタイルで階層を示す。 */
 .adoc h4 {
-  font-size: 1rem;
+  font-size: 1.05em;
 }
 
-.adoc h5,
-.adoc h6 {
-  font-size: 1rem;
+.adoc h5 {
+  font-size: 1em;
   color: var(--fg-muted);
+}
+
+.adoc h6 {
+  font-size: 1em;
+  color: var(--fg-muted);
+  font-style: italic;
 }
 
 .adoc a {
