@@ -561,6 +561,43 @@ body {
   padding: 0;
 }
 
+/* 例示ブロック(====)は枠線の面、サイドバー(****)は持ち上がった背景面。
+   面の作りを変えることで、相互にネストしたときにも境界が判別できる */
+.adoc .exampleblock {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1.1rem;
+  margin: 1em 0;
+}
+
+.adoc .sidebarblock {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1.1rem;
+  margin: 1em 0;
+}
+
+/* ブロックタイトル(.タイトル 記法)。例示ブロックは .title が直下、
+   サイドバーは .content の中に入る */
+.adoc .exampleblock > .title,
+.adoc .sidebarblock > .content > .title {
+  font-size: 0.85em;
+  font-weight: 650;
+  color: var(--fg-muted);
+  margin-bottom: 0.5em;
+}
+
+.adoc .exampleblock .content > :first-child,
+.adoc .sidebarblock .content > :first-child {
+  margin-top: 0;
+}
+
+.adoc .exampleblock .content > :last-child,
+.adoc .sidebarblock .content > :last-child {
+  margin-bottom: 0;
+}
+
 .adoc .admonitionblock {
   display: flex;
   gap: 0.8rem;

@@ -7,6 +7,9 @@ const asciidoctor = Asciidoctor();
 const BASE_ATTRIBUTES = {
   showtitle: true, // 文書タイトル(= 見出し)をプレビューに表示
   sectnums: false,
+  // 例示ブロックの既定キャプション("Example 1." が英語で付く)を無効化し、
+  // .タイトル で書いた文字列だけを表示する
+  "example-caption": false,
 };
 
 /** プレビュー用の HTML 断片に変換する。 */
