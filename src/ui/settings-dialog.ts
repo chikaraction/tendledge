@@ -109,8 +109,8 @@ export function createSettingsDialog(
   fontSpan.textContent = "エディタのフォントサイズ (px)";
   const fontInput = document.createElement("input");
   fontInput.type = "number";
-  fontInput.min = "10";
-  fontInput.max = "24";
+  fontInput.min = "9";
+  fontInput.max = "72";
   fontInput.step = "1";
   fontInput.value = String(settings.editorFontSize);
   fontInput.addEventListener("change", () => {
@@ -122,6 +122,100 @@ export function createSettingsDialog(
   fontRow.appendChild(fontSpan);
   fontRow.appendChild(fontInput);
   form.appendChild(fontRow);
+
+  // --- フォントファミリ入力の候補リスト(エディタ・プレビュー共用) ---
+  // datalist は自由入力を妨げないただの補完候補。空欄 = アプリ既定フォント。
+  const fontFamilyList = document.createElement("datalist");
+  fontFamilyList.id = "font-family-suggestions";
+  const FONT_FAMILY_SUGGESTIONS = [
+    "BIZ UDGothic",
+    "BIZ UDPGothic",
+    "Cascadia Code",
+    "Consolas",
+    "HackGen",
+    "Meiryo",
+    "MS Gothic",
+    "Noto Sans JP",
+    "UDEV Gothic",
+    "Yu Gothic UI",
+    "游ゴシック",
+    "游明朝",
+  ];
+  for (const name of FONT_FAMILY_SUGGESTIONS) {
+    const opt = document.createElement("option");
+    opt.value = name;
+    fontFamilyList.appendChild(opt);
+  }
+  form.appendChild(fontFamilyList);
+
+  function createFontFamilyRow(
+    label: string,
+    getValue: () => string,
+    apply: (value: string) => void,
+  ): { row: HTMLLabelElement; input: HTMLInputElement } {
+    const row = document.createElement("label");
+    row.className = "settings-row";
+    const span = document.createElement("span");
+    span.textContent = label;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "空欄で既定フォント";
+    input.setAttribute("list", fontFamilyList.id);
+    input.value = getValue();
+    input.addEventListener("change", () => {
+      apply(input.value);
+      input.value = getValue();
+    });
+    row.appendChild(span);
+    row.appendChild(input);
+    return { row, input };
+  }
+
+  // --- エディタのフォントファミリ ---
+  const editorFamily = createFontFamilyRow(
+    "エディタのフォント",
+    () => settings.editorFontFamily,
+    (value) => {
+      settings = mergeSettings({ ...settings, editorFontFamily: value });
+      onChange(settings);
+    },
+  );
+  form.appendChild(editorFamily.row);
+
+  // --- プレビューのフォントサイズ ---
+  const previewFontRow = document.createElement("label");
+  previewFontRow.className = "settings-row";
+  const previewFontSpan = document.createElement("span");
+  previewFontSpan.textContent = "プレビューのフォントサイズ (px)";
+  const previewFontInput = document.createElement("input");
+  previewFontInput.type = "number";
+  previewFontInput.min = "9";
+  previewFontInput.max = "72";
+  previewFontInput.step = "1";
+  previewFontInput.value = String(settings.previewFontSize);
+  previewFontInput.addEventListener("change", () => {
+    const parsed = mergeSettings({
+      ...settings,
+      previewFontSize: previewFontInput.valueAsNumber,
+    });
+    settings = parsed;
+    previewFontInput.value = String(settings.previewFontSize);
+    onChange(settings);
+  });
+  previewFontRow.appendChild(previewFontSpan);
+  previewFontRow.appendChild(previewFontInput);
+  form.appendChild(previewFontRow);
+
+  // --- プレビューのフォントファミリ ---
+  const previewFamily = createFontFamilyRow(
+    "プレビューのフォント",
+    () => settings.previewFontFamily,
+    (value) => {
+      settings = mergeSettings({ ...settings, previewFontFamily: value });
+      onChange(settings);
+    },
+  );
+  form.appendChild(previewFamily.row);
 
   // --- プレビューのデバウンス ---
   const debounceRow = document.createElement("label");
@@ -163,6 +257,9 @@ export function createSettingsDialog(
       settings = { ...getCurrent() };
       themeSelect.value = settings.theme;
       fontInput.value = String(settings.editorFontSize);
+      editorFamily.input.value = settings.editorFontFamily;
+      previewFontInput.value = String(settings.previewFontSize);
+      previewFamily.input.value = settings.previewFontFamily;
       debounceInput.value = String(settings.previewDebounceMs);
       dialogEl.showModal();
     },

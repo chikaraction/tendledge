@@ -2,11 +2,19 @@
 // タブ切替のために「同じ拡張セットで EditorState を作り直す」機能を持つ
 // (EditorState をタブごとに保持すれば undo 履歴やカーソル位置もタブごとに保たれる)。
 import { indentWithTab } from "@codemirror/commands";
-import { StreamLanguage } from "@codemirror/language";
+import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
 import { EditorState, type Extension } from "@codemirror/state";
 import { keymap } from "@codemirror/view";
 import { basicSetup, EditorView } from "codemirror";
+import { tags } from "@lezer/highlight";
 import { asciidocMode } from "../asciidoc-mode";
+
+// basicSetup 既定の defaultHighlightStyle は見出し(tags.heading)に下線を付ける。
+// AsciiDoc の "=" 見出し行に下線は不要なので、太字だけの非フォールバック
+// HighlightStyle で上書きする(fallback ではない方が優先されるため既定の下線が消える)。
+const headingHighlight = syntaxHighlighting(
+  HighlightStyle.define([{ tag: tags.heading, fontWeight: "700" }]),
+);
 
 export interface EditorController {
   view: EditorView;
@@ -25,20 +33,38 @@ export function createEditor(opts: {
     basicSetup,
     keymap.of([indentWithTab]),
     StreamLanguage.define(asciidocMode),
+    headingHighlight,
     EditorView.lineWrapping,
     // CodeMirror の既定テーマは常に light 配色なので、Slate のデザイントークン
     // (CSS 変数)で上書きする。ダークテーマ時に行番号ガター等が白いままになるのを防ぐ。
     EditorView.theme({
       "&": { backgroundColor: "var(--bg)", color: "var(--fg)" },
       ".cm-content": { caretColor: "var(--fg)" },
+      // CodeMirror の既定 CSS(&light/&dark 前提のセレクタ)は、dark:true を
+      // 渡していないこのテーマ設定では発火しない。加えて "&light.cm-focused > ..."
+      // のような複合セレクタは詳細度が高く、素の ".cm-cursor" / ".cm-selectionBackground"
+      // 指定だけでは負けて黒いカーソル・既定の薄いグレーの選択色のまま上書きされない。
+      // 同じ構造のセレクタで明示的に上書きする。
+      ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--fg)" },
       ".cm-gutters": {
         backgroundColor: "var(--bg-subtle)",
         color: "var(--fg-muted)",
         border: "none",
       },
-      ".cm-activeLine": { backgroundColor: "var(--bg-subtle)" },
+      // アクティブ行の背景を不透明にすると、背面レイヤーに描かれる選択ハイライトを
+      // カーソル行だけ覆い隠してしまう(同一行内の選択が見えなくなる)ため半透明にする。
+      ".cm-activeLine": { backgroundColor: "color-mix(in srgb, var(--fg) 5%, transparent)" },
       ".cm-activeLineGutter": { backgroundColor: "var(--bg-raised)" },
-      ".cm-selectionBackground, ::selection": { backgroundColor: "var(--accent)" },
+      ".cm-selectionBackground": { backgroundColor: "var(--accent)" },
+      // 選択文字列と同じテキストの自動ハイライト(highlightSelectionMatches)。
+      // 既定の薄緑は Slate と合わないため、選択色より弱いアクセント色にする。
+      ".cm-selectionMatch": {
+        backgroundColor: "color-mix(in srgb, var(--accent) 30%, transparent)",
+      },
+      "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
+        backgroundColor: "var(--accent)",
+      },
+      "::selection": { backgroundColor: "var(--accent)" },
     }),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {

@@ -11,14 +11,22 @@ export interface Settings {
   theme: Theme;
   /** エディタのフォントサイズ(px) */
   editorFontSize: number;
+  /** エディタのフォントファミリ(空文字列 = アプリ既定) */
+  editorFontFamily: string;
+  /** プレビューのフォントサイズ(px) */
+  previewFontSize: number;
+  /** プレビューのフォントファミリ(空文字列 = アプリ既定) */
+  previewFontFamily: string;
   /** プレビュー再描画のデバウンス時間(ms) */
   previewDebounceMs: number;
 }
 
 const THEMES: readonly Theme[] = ["light", "dark", "system"];
 
-const FONT_SIZE_MIN = 10;
-const FONT_SIZE_MAX = 24;
+const FONT_SIZE_MIN = 9;
+const FONT_SIZE_MAX = 72;
+
+const FONT_FAMILY_MAX_LENGTH = 200;
 
 const DEBOUNCE_MS_MIN = 100;
 const DEBOUNCE_MS_MAX = 2000;
@@ -26,6 +34,9 @@ const DEBOUNCE_MS_MAX = 2000;
 export const DEFAULT_SETTINGS: Settings = {
   theme: "system",
   editorFontSize: 14,
+  editorFontFamily: "",
+  previewFontSize: 16,
+  previewFontFamily: "",
   previewDebounceMs: 300,
 };
 
@@ -35,6 +46,13 @@ function isTheme(value: unknown): value is Theme {
 
 function isNumberInRange(value: unknown, min: number, max: number): value is number {
   return typeof value === "number" && !Number.isNaN(value) && value >= min && value <= max;
+}
+
+/** フォントファミリとして妥当なら前後空白を除いた値を、そうでなければ既定値を返す */
+function mergeFontFamily(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  return trimmed.length <= FONT_FAMILY_MAX_LENGTH ? trimmed : fallback;
 }
 
 /**
@@ -51,6 +69,17 @@ export function mergeSettings(saved: unknown): Settings {
     editorFontSize: isNumberInRange(candidate.editorFontSize, FONT_SIZE_MIN, FONT_SIZE_MAX)
       ? candidate.editorFontSize
       : DEFAULT_SETTINGS.editorFontSize,
+    editorFontFamily: mergeFontFamily(
+      candidate.editorFontFamily,
+      DEFAULT_SETTINGS.editorFontFamily,
+    ),
+    previewFontSize: isNumberInRange(candidate.previewFontSize, FONT_SIZE_MIN, FONT_SIZE_MAX)
+      ? candidate.previewFontSize
+      : DEFAULT_SETTINGS.previewFontSize,
+    previewFontFamily: mergeFontFamily(
+      candidate.previewFontFamily,
+      DEFAULT_SETTINGS.previewFontFamily,
+    ),
     previewDebounceMs: isNumberInRange(
       candidate.previewDebounceMs,
       DEBOUNCE_MS_MIN,

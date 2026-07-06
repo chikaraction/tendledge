@@ -14,8 +14,15 @@
   --border: #e1e1e8;
   --accent: #6d5bd0;
   --error: #b0362c;
+  /* アドモニションの種類別カラー(伝統的な AsciiDoc/Font Awesome 配色に合わせる) */
+  --note-color: #2f80ed;
+  --tip-color: #d9a005;
+  --important-color: #e0393e;
+  --warning-color: #e08a1e;
+  --caution-color: #d8481e;
   --editor-ratio: 50%;
   --editor-font-size: 14px;
+  --preview-font-size: 16px;
   color-scheme: light dark;
 }
 
@@ -423,8 +430,16 @@ body {
 }
 
 #editor-pane .cm-scroller {
-  font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas,
-    monospace;
+  /* --editor-font-family は設定でフォント指定時のみ main.ts が定義する
+     (空文字列だと var() のフォールバックが働かないため、未指定時は変数ごと外す) */
+  font-family: var(
+    --editor-font-family,
+    ui-monospace,
+    "SFMono-Regular",
+    "Cascadia Code",
+    Consolas,
+    monospace
+  );
   line-height: 1.6;
 }
 
@@ -457,31 +472,50 @@ body {
   margin: 0 auto;
   padding: 2rem 2.2rem 4rem;
   line-height: 1.75;
-  font-size: 15.5px;
+  font-size: var(--preview-font-size, 16px);
+  font-family: var(--preview-font-family, inherit);
 }
 
 .adoc h1,
 .adoc h2,
 .adoc h3,
-.adoc h4 {
+.adoc h4,
+.adoc h5,
+.adoc h6 {
   line-height: 1.35;
   margin: 1.6em 0 0.6em;
   font-weight: 650;
 }
 
+/* 見出しのサイズは em(.adoc 自身の font-size = --preview-font-size からの相対値)
+   にする。rem(ドキュメントルート基準の固定値)だと、設定でプレビューの
+   フォントサイズを本文分大きくしたときに見出しの方が追従せず、本文より
+   見出しが小さくなる逆転が起きるため。 */
 .adoc h1 {
-  font-size: 1.7rem;
-  margin-top: 0.4em;
+  font-size: 2.75em;
 }
 
 .adoc h2 {
-  font-size: 1.3rem;
-  padding-bottom: 0.25em;
-  border-bottom: 1px solid var(--border);
+  font-size: 2.3125em;
 }
 
 .adoc h3 {
-  font-size: 1.1rem;
+  font-size: 1.6875em;
+}
+
+/* h4〜h6 は AsciiDoc(====〜======)としては使えるが本文サイズ以下には
+   縮めない(見出しが本文より小さく見えるのは違和感が強いため)。
+   代わりにサイズをわずかに残しつつ、色・スタイルで階層を示す。 */
+.adoc h4 {
+  font-size: 1.4375em;
+}
+
+.adoc h5 {
+  font-size: 1.225em;
+}
+
+.adoc h6 {
+  font-size: 1em;
 }
 
 .adoc a {
@@ -520,7 +554,7 @@ body {
   display: flex;
   gap: 0.8rem;
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--note-color);
   border-radius: 0 8px 8px 0;
   padding: 0.7rem 1rem;
   margin: 1em 0;
@@ -534,11 +568,57 @@ body {
 }
 
 .adoc .admonitionblock .icon {
-  font-weight: 700;
-  font-size: 0.8rem;
-  color: var(--accent);
-  white-space: nowrap;
-  padding-right: 0.8rem;
+  padding-right: 1.3rem;
+  margin-right: 0.4rem;
+  border-right: 1px solid var(--fg-muted);
+}
+
+.adoc .admonitionblock .icon .title {
+  display: flex;
+  align-items: center;
+}
+
+.adoc .admonitionblock .content {
+  padding-left: 0.9rem;
+}
+
+/* アイコンは種類ごとの色で塗りつぶした丸バッジにし、中の絵柄は白抜きにする */
+.adoc .admonition-icon {
+  width: 1.3em;
+  height: 1.3em;
+  padding: 0.3em;
+  box-sizing: content-box;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--note-color);
+}
+
+.adoc .admonitionblock.tip {
+  border-left-color: var(--tip-color);
+}
+.adoc .admonitionblock.tip .admonition-icon {
+  background: var(--tip-color);
+}
+
+.adoc .admonitionblock.important {
+  border-left-color: var(--important-color);
+}
+.adoc .admonitionblock.important .admonition-icon {
+  background: var(--important-color);
+}
+
+.adoc .admonitionblock.warning {
+  border-left-color: var(--warning-color);
+}
+.adoc .admonitionblock.warning .admonition-icon {
+  background: var(--warning-color);
+}
+
+.adoc .admonitionblock.caution {
+  border-left-color: var(--caution-color);
+}
+.adoc .admonitionblock.caution .admonition-icon {
+  background: var(--caution-color);
 }
 
 .adoc table:not(.admonitionblock table) {
@@ -574,6 +654,22 @@ body {
 .adoc #toc ul {
   list-style: none;
   padding-left: 1em;
+}
+
+.adoc .footnote-icon {
+  width: 0.85em;
+  height: 0.85em;
+  color: var(--accent);
+  vertical-align: -0.05em;
+  margin-right: 0.15em;
+}
+
+.adoc #footnotes .footnote {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2em;
+  margin: 0.3em 0;
+  color: var(--fg-muted);
 }
 
 /* ---------------------------------------------------------------------------

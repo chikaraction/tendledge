@@ -6,6 +6,7 @@ import {
   editorLineForPreviewScrollTop,
   previewScrollTopForLine,
 } from "../core/scroll-sync";
+import { icon, icons } from "./icons";
 import { convertToPreviewHtml, sanitizePreviewHtml } from "../render";
 
 export interface PreviewController {
@@ -67,10 +68,47 @@ export function createPreview(opts: {
     return Math.max(0, paneEl.scrollHeight - paneEl.clientHeight);
   }
 
+  // 脚注参照・脚注定義の番号の前に、上付き文字っぽさを示すアイコンを付ける。
+  // Asciidoctor.js は "[1]" のような素のテキストしか出さないため、
+  // ここで DOM を後処理して Lucide アイコンを差し込む。
+  function decorateFootnotes(): void {
+    const refs = previewEl.querySelectorAll<HTMLElement>("sup.footnote, sup.footnoteref");
+    refs.forEach((sup) => sup.prepend(icon(icons.footnote, 11, "footnote-icon")));
+    const defs = previewEl.querySelectorAll<HTMLElement>("#footnotes .footnote");
+    defs.forEach((def) => def.prepend(icon(icons.footnote, 13, "footnote-icon")));
+  }
+
+  // アドモニション(NOTE/TIP/IMPORTANT/WARNING/CAUTION)のラベルに種類別の
+  // Lucide アイコンを付ける。Asciidoctor.js のデフォルト出力は
+  // td.icon > .title に "Note" 等のテキストを置くだけなので、その前に差し込む。
+  const ADMONITION_ICONS = {
+    note: icons.note,
+    tip: icons.tip,
+    important: icons.important,
+    warning: icons.warning,
+    caution: icons.caution,
+  } as const;
+
+  function decorateAdmonitions(): void {
+    const blocks = previewEl.querySelectorAll<HTMLElement>(".admonitionblock");
+    blocks.forEach((block) => {
+      const type = (Object.keys(ADMONITION_ICONS) as (keyof typeof ADMONITION_ICONS)[]).find(
+        (t) => block.classList.contains(t),
+      );
+      const title = block.querySelector<HTMLElement>("td.icon .title");
+      if (!type || !title) return;
+      const svg = icon(ADMONITION_ICONS[type], 16, "admonition-icon");
+      svg.setAttribute("title", title.textContent ?? "");
+      title.replaceChildren(svg);
+    });
+  }
+
   function render(source: string): void {
     const start = performance.now();
     try {
       previewEl.innerHTML = sanitizePreviewHtml(convertToPreviewHtml(source));
+      decorateFootnotes();
+      decorateAdmonitions();
       rebuildHeadingAnchors(source);
       statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;
       statusEl.classList.remove("error");
