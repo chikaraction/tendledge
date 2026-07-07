@@ -10,6 +10,7 @@ import type { MermaidTheme } from "../core/diagram";
 import { decorateAdmonitionIcons } from "./admonition-icons";
 import { decorateChecklists } from "./checklist-decoration";
 import { decorateCodeBlocks } from "./code-highlight";
+import { renderKrokiBlocks } from "./kroki";
 import { renderMermaidBlocks } from "./mermaid";
 import { convertToPreviewHtml, sanitizePreviewHtml } from "../render";
 
@@ -41,8 +42,10 @@ export function createPreview(opts: {
   resolveImageSrc?: (src: string) => string | undefined;
   /** mermaid 図に使うテーマの提供元(未指定なら図はコードブロックのまま表示) */
   mermaidTheme?: () => MermaidTheme;
+  /** Kroki(PlantUML / Draw.io)連携の設定提供元(未指定 or enabled: false なら図はコードブロックのまま表示) */
+  kroki?: () => { enabled: boolean; serverUrl: string };
 }): PreviewController {
-  const { previewEl, paneEl, statusEl, resolveImageSrc, mermaidTheme } = opts;
+  const { previewEl, paneEl, statusEl, resolveImageSrc, mermaidTheme, kroki } = opts;
   let debounceMs = opts.debounceMs ?? 300;
 
   // ソースの見出し行とプレビューの h1〜h6 を出現順で対応付ける。
@@ -87,22 +90,44 @@ export function createPreview(opts: {
     });
   }
 
-  // mermaid のレンダリングは非同期(初回は本体の遅延ロードも走る)ため、
-  // 描画のたびに世代を進め、完了時に世代が古くなっていた結果は捨てる。
-  // 古い世代の DOM 操作自体は innerHTML 差し替えで切り離された要素に
-  // 向かうので実害はなく、ガードすべきはアンカー再構築だけ。
+  // 図のレンダリング(mermaid・Kroki とも)は非同期(初回ロード・ネットワーク
+  // 通信を伴う)ため、描画のたびに世代を進め、完了時に世代が古くなっていた
+  // 結果は捨てる。古い世代の DOM 操作自体は innerHTML 差し替えで切り離された
+  // 要素に向かうので実害はなく、ガードすべきはアンカー再構築だけ。
   let renderGeneration = 0;
 
-  async function decorateMermaid(source: string, generation: number): Promise<void> {
-    if (!mermaidTheme) return;
+  async function decorateMermaid(): Promise<boolean> {
+    if (!mermaidTheme) return false;
     try {
-      const rendered = await renderMermaidBlocks(previewEl, mermaidTheme());
-      if (!rendered || generation !== renderGeneration) return;
-      // 図の挿入で要素の高さが変わるので、スクロール同期のアンカーを取り直す
-      rebuildHeadingAnchors(source);
+      return await renderMermaidBlocks(previewEl, mermaidTheme());
     } catch (err) {
       // 図のレンダリング失敗でプレビュー全体は壊さない
       console.error(err);
+      return false;
+    }
+  }
+
+  async function decorateKroki(): Promise<boolean> {
+    const config = kroki?.();
+    if (!config?.enabled) return false;
+    try {
+      return await renderKrokiBlocks(previewEl, { serverUrl: config.serverUrl });
+    } catch (err) {
+      // 図のレンダリング失敗でプレビュー全体は壊さない
+      console.error(err);
+      return false;
+    }
+  }
+
+  async function decorateDiagrams(source: string, generation: number): Promise<void> {
+    const [mermaidRendered, krokiRendered] = await Promise.all([
+      decorateMermaid(),
+      decorateKroki(),
+    ]);
+    if (generation !== renderGeneration) return;
+    if (mermaidRendered || krokiRendered) {
+      // 図の挿入で要素の高さが変わるので、スクロール同期のアンカーを取り直す
+      rebuildHeadingAnchors(source);
     }
   }
 
@@ -118,7 +143,7 @@ export function createPreview(opts: {
       rebuildHeadingAnchors(source);
       // 図の完了を待ちたい呼び出し元(印刷前のテーマ差し替え)のために返す。
       // 変換 ms のステータスは同期部分だけを計測する(図はキャッシュが効けばほぼゼロ)
-      const diagramsDone = decorateMermaid(source, generation);
+      const diagramsDone = decorateDiagrams(source, generation);
       statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;
       statusEl.classList.remove("error");
       return diagramsDone;

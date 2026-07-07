@@ -729,6 +729,49 @@ body {
   white-space: pre-wrap;
 }
 
+/* Kroki 図(ui/kroki.ts が PlantUML / Draw.io のコードブロックを <img> に差し替える)。
+   Kroki が返す SVG は白背景前提の配色でテーマに追従しないため、
+   コンテナをライト背景固定にしてダークテーマでも図が読めるようにする */
+.adoc .kroki-diagram {
+  margin: 1em 0;
+  text-align: center;
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 0.6em;
+}
+
+.adoc .kroki-diagram img {
+  max-width: 100%;
+  height: auto;
+  zoom: var(--diagram-scale, 1);
+}
+
+/* Kroki サーバーへの問い合わせ中であることを示す */
+.adoc .kroki-loading {
+  opacity: 0.6;
+}
+
+.adoc .kroki-loading::after {
+  content: "図を取得中…";
+  display: block;
+  font-size: 0.8rem;
+  color: var(--fg-muted);
+  margin-top: 0.3em;
+}
+
+/* 構文エラー・接続エラー時はコードブロックを残し、直下に知らせる */
+.adoc .kroki-error {
+  font-size: 0.8rem;
+  color: var(--error);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4em 0.8em;
+  margin: 0.4em 0 1em;
+  white-space: pre-wrap;
+}
+
 /* 例示ブロック(====)は枠線の面、サイドバー(****)は持ち上がった背景面。
    面の作りを変えることで、相互にネストしたときにも境界が判別できる */
 .adoc .exampleblock {
@@ -1015,7 +1058,8 @@ body {
   .adoc .admonitionblock,
   .adoc table.tableblock,
   .adoc .imageblock,
-  .adoc .mermaid-diagram {
+  .adoc .mermaid-diagram,
+  .adoc .kroki-diagram {
     break-inside: avoid;
   }
 

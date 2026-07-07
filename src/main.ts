@@ -91,6 +91,10 @@ const preview = createPreview({
   // 印刷時だけは mermaidThemeOverride でライト(default)に一時上書きする。
   mermaidTheme: () =>
     mermaidThemeOverride ?? resolveMermaidTheme(currentSettings.theme, prefersDarkMedia.matches),
+  kroki: () => ({
+    enabled: currentSettings.krokiEnabled,
+    serverUrl: currentSettings.krokiServerUrl,
+  }),
 });
 // 印刷前の一時テーマ上書き(exportPdf が設定/解除する)
 let mermaidThemeOverride: MermaidTheme | undefined;
@@ -387,6 +391,7 @@ function applySettings(settings: Settings): void {
   }
   preview.setDebounceMs(settings.previewDebounceMs);
   rerenderPreviewIfMermaidThemeChanged();
+  rerenderPreviewIfKrokiConfigChanged();
 }
 
 /** mermaid の実効テーマが前回描画時から変わっていたら、図を描き直す */
@@ -394,6 +399,18 @@ function rerenderPreviewIfMermaidThemeChanged(): void {
   const next = resolveMermaidTheme(currentSettings.theme, prefersDarkMedia.matches);
   if (next === lastMermaidTheme) return;
   lastMermaidTheme = next;
+  void preview.render(view.state.doc.toString());
+}
+
+// 直近でプレビューに使った Kroki 設定。有効化・サーバー URL の変更を検知して
+// 図を描き直す(オフのままなら再描画は不要)ためのキー。
+let lastKrokiConfigKey = `${DEFAULT_SETTINGS.krokiEnabled} ${DEFAULT_SETTINGS.krokiServerUrl}`;
+
+/** Kroki のオプトイン状態・サーバー URL が前回描画時から変わっていたら、図を描き直す */
+function rerenderPreviewIfKrokiConfigChanged(): void {
+  const next = `${currentSettings.krokiEnabled} ${currentSettings.krokiServerUrl}`;
+  if (next === lastKrokiConfigKey) return;
+  lastKrokiConfigKey = next;
   void preview.render(view.state.doc.toString());
 }
 
