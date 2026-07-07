@@ -9,6 +9,7 @@ import {
 import type { MermaidTheme } from "../core/diagram";
 import { decorateAdmonitionIcons } from "./admonition-icons";
 import { decorateChecklists } from "./checklist-decoration";
+import { decorateCodeBlocks } from "./code-highlight";
 import { renderMermaidBlocks } from "./mermaid";
 import { convertToPreviewHtml, sanitizePreviewHtml } from "../render";
 
@@ -113,6 +114,7 @@ export function createPreview(opts: {
       decorateImages();
       decorateChecklists(previewEl);
       decorateAdmonitionIcons(previewEl);
+      decorateCodeBlocks(previewEl);
       rebuildHeadingAnchors(source);
       // 図の完了を待ちたい呼び出し元(印刷前のテーマ差し替え)のために返す。
       // 変換 ms のステータスは同期部分だけを計測する(図はキャッシュが効けばほぼゼロ)
