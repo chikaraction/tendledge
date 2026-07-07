@@ -627,6 +627,11 @@ body {
 .adoc .mermaid-diagram svg {
   max-width: 100%;
   height: auto;
+  /* プレビューのフォントサイズ設定(既定 16px 比)に連動して図全体を拡大縮小する。
+     mermaid の SVG は寸法が焼き込まれるため font-size では伸縮しない。
+     zoom はレイアウトごと拡縮するので、後続要素の位置やスクロール同期も自然に追従する
+     (エクスポート HTML では変数未定義 → 1 倍のまま) */
+  zoom: var(--diagram-scale, 1);
 }
 
 /* mermaid 本体の遅延ロード中(初回のみ)であることを示す */

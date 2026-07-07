@@ -364,6 +364,12 @@ function applySettings(settings: Settings): void {
     "--preview-font-size",
     `${settings.previewFontSize}px`,
   );
+  // mermaid 図は SVG に寸法が焼き込まれておりフォントサイズ変数では伸縮しないため、
+  // 既定 16px に対する倍率を渡して図全体を拡大縮小させる(styles.css の zoom)
+  document.documentElement.style.setProperty(
+    "--diagram-scale",
+    String(settings.previewFontSize / DEFAULT_SETTINGS.previewFontSize),
+  );
   // フォントファミリ未指定(空)のときは変数ごと外して CSS 側のフォールバックに任せる
   // (空文字列を設定すると var() の第2引数が使われず、フォント指定が無効になるため)
   if (settings.editorFontFamily) {
