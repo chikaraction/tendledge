@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS, mergeSettings } from "./settings";
 
 describe("DEFAULT_SETTINGS: 既定値", () => {
-  it("テーマは system、フォントサイズは 14px、プレビューは 16px、フォントファミリは空(既定)、デバウンスは 300ms", () => {
+  it("テーマは system、フォントサイズは 14px、プレビューは 16px、フォントファミリは空(既定)、デバウンスは 300ms、Kroki は無効・既定サーバーは kroki.io", () => {
     expect(DEFAULT_SETTINGS).toEqual({
       theme: "system",
       editorFontSize: 14,
@@ -10,6 +10,8 @@ describe("DEFAULT_SETTINGS: 既定値", () => {
       previewFontSize: 16,
       previewFontFamily: "",
       previewDebounceMs: 300,
+      krokiEnabled: false,
+      krokiServerUrl: "https://kroki.io",
     });
   });
 });
@@ -24,6 +26,8 @@ describe("mergeSettings: 保存値を検証してデフォルトにフォール�
         previewFontSize: 20,
         previewFontFamily: "Noto Sans JP",
         previewDebounceMs: 500,
+        krokiEnabled: true,
+        krokiServerUrl: "http://localhost:8000",
       }),
     ).toEqual({
       theme: "dark",
@@ -32,6 +36,8 @@ describe("mergeSettings: 保存値を検証してデフォルトにフォール�
       previewFontSize: 20,
       previewFontFamily: "Noto Sans JP",
       previewDebounceMs: 500,
+      krokiEnabled: true,
+      krokiServerUrl: "http://localhost:8000",
     });
   });
 
@@ -63,6 +69,8 @@ describe("mergeSettings: 保存値を検証してデフォルトにフォール�
       previewFontSize: 16,
       previewFontFamily: "",
       previewDebounceMs: 300,
+      krokiEnabled: false,
+      krokiServerUrl: "https://kroki.io",
     });
   });
 
@@ -141,6 +149,8 @@ describe("mergeSettings: 保存値を検証してデフォルトにフォール�
       previewFontSize: 16,
       previewFontFamily: "",
       previewDebounceMs: 300,
+      krokiEnabled: false,
+      krokiServerUrl: "https://kroki.io",
     });
   });
 
@@ -165,5 +175,49 @@ describe("mergeSettings: 保存値を検証してデフォルトにフォール�
     expect(mergeSettings({ previewFontFamily: "a".repeat(200) }).previewFontFamily).toBe(
       "a".repeat(200),
     );
+  });
+
+  it("krokiEnabled は boolean ならそのまま採用する", () => {
+    expect(mergeSettings({ krokiEnabled: true }).krokiEnabled).toBe(true);
+    expect(mergeSettings({ krokiEnabled: false }).krokiEnabled).toBe(false);
+  });
+
+  it("krokiEnabled が boolean でない場合はデフォルト(false)にフォールバックする", () => {
+    expect(mergeSettings({ krokiEnabled: "true" }).krokiEnabled).toBe(false);
+    expect(mergeSettings({ krokiEnabled: 1 }).krokiEnabled).toBe(false);
+    expect(mergeSettings({ krokiEnabled: null }).krokiEnabled).toBe(false);
+  });
+
+  it("krokiServerUrl は http(s):// で始まる文字列ならそのまま採用する", () => {
+    expect(mergeSettings({ krokiServerUrl: "http://localhost:8000" }).krokiServerUrl).toBe(
+      "http://localhost:8000",
+    );
+    expect(mergeSettings({ krokiServerUrl: "https://kroki.example.com" }).krokiServerUrl).toBe(
+      "https://kroki.example.com",
+    );
+  });
+
+  it("krokiServerUrl の前後の空白は取り除く", () => {
+    expect(mergeSettings({ krokiServerUrl: "  https://kroki.io  " }).krokiServerUrl).toBe(
+      "https://kroki.io",
+    );
+  });
+
+  it("krokiServerUrl が http(s):// で始まらない場合はデフォルトにフォールバックする", () => {
+    expect(mergeSettings({ krokiServerUrl: "ftp://kroki.io" }).krokiServerUrl).toBe(
+      "https://kroki.io",
+    );
+    expect(mergeSettings({ krokiServerUrl: "javascript:alert(1)" }).krokiServerUrl).toBe(
+      "https://kroki.io",
+    );
+    expect(mergeSettings({ krokiServerUrl: "kroki.io" }).krokiServerUrl).toBe("https://kroki.io");
+  });
+
+  it("krokiServerUrl が文字列でない場合はデフォルトにフォールバックする", () => {
+    expect(mergeSettings({ krokiServerUrl: 42 }).krokiServerUrl).toBe("https://kroki.io");
+  });
+
+  it("krokiServerUrl が空文字列の場合はデフォルトにフォールバックする", () => {
+    expect(mergeSettings({ krokiServerUrl: "" }).krokiServerUrl).toBe("https://kroki.io");
   });
 });
