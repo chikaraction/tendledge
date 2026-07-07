@@ -43,6 +43,15 @@ describe("sanitizePreviewHtml: プレビュー HTML のサニタイズ", () => {
     const sanitized = sanitizePreviewHtml(convertToPreviewHtml(source));
     expect(sanitized).toContain("<kbd>");
   });
+
+  // シンタックスハイライト(ui/code-highlight.ts)は data-lang とコードブロックの
+  // class 属性を頼りに動くため、DOMPurify がこれらを落とさないことを固定する
+  it("コードブロックの class・data-lang 属性は保持する(シンタックスハイライトの前提)", () => {
+    const source = ["[source,javascript]", "----", "const x = 1;", "----"].join("\n");
+    const sanitized = sanitizePreviewHtml(convertToPreviewHtml(source));
+    expect(sanitized).toContain('class="highlight"');
+    expect(sanitized).toContain('data-lang="javascript"');
+  });
 });
 
 // mermaid の生成 SVG はサニタイズ済み DOM のテキスト起点なので理論上安全だが、

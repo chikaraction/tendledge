@@ -26,6 +26,16 @@
   --important-color: #e0393e;
   --warning-color: #e08a1e;
   --caution-color: #d8481e;
+  /* シンタックスハイライトのトークン配色(ライト既定)。hljs の既製テーマは
+     色が固定値でテーマ追従できないため、Slate パレットに合わせた自前の
+     変数にマップする(.adoc .hljs-* ルール参照) */
+  --hl-keyword: #b0362c;
+  --hl-string: #2f7d3a;
+  --hl-comment: #6f6f7e;
+  --hl-number: #a35a00;
+  --hl-title: #1b5fbd;
+  --hl-attr: #6d5bd0;
+  --hl-meta: #6f6f7e;
   --editor-ratio: 50%;
   --editor-font-size: 14px;
   --preview-font-size: 16px;
@@ -44,6 +54,13 @@
     --accent: #a78bfa;
     --error: #e5766c;
     --code-bg: #26262f;
+    --hl-keyword: #e5766c;
+    --hl-string: #7fc784;
+    --hl-comment: #8d8da0;
+    --hl-number: #e0a75e;
+    --hl-title: #7aa2f7;
+    --hl-attr: #a78bfa;
+    --hl-meta: #8d8da0;
   }
 }
 
@@ -58,6 +75,13 @@
   --accent: #a78bfa;
   --error: #e5766c;
   --code-bg: #26262f;
+  --hl-keyword: #e5766c;
+  --hl-string: #7fc784;
+  --hl-comment: #8d8da0;
+  --hl-number: #e0a75e;
+  --hl-title: #7aa2f7;
+  --hl-attr: #a78bfa;
+  --hl-meta: #8d8da0;
 }
 
 /* テーマ設定が明示的に "light" の場合: ベースのライト配色をそのまま使う(上書き不要) */
@@ -617,6 +641,52 @@ body {
   padding: 0;
 }
 
+/* シンタックスハイライト(ui/code-highlight.ts が hljs で付けるクラス)。
+   hljs の細かいクラスは種類が多いので、意味の近いものをまとめて
+   7つのトークン変数に割り当てる */
+.adoc .hljs-keyword,
+.adoc .hljs-selector-tag,
+.adoc .hljs-literal,
+.adoc .hljs-section {
+  color: var(--hl-keyword);
+}
+
+.adoc .hljs-string,
+.adoc .hljs-regexp,
+.adoc .hljs-symbol {
+  color: var(--hl-string);
+}
+
+.adoc .hljs-comment,
+.adoc .hljs-quote {
+  color: var(--hl-comment);
+  font-style: italic;
+}
+
+.adoc .hljs-number {
+  color: var(--hl-number);
+}
+
+.adoc .hljs-title,
+.adoc .hljs-title.function_,
+.adoc .hljs-title.class_,
+.adoc .hljs-built_in {
+  color: var(--hl-title);
+}
+
+.adoc .hljs-attr,
+.adoc .hljs-variable,
+.adoc .hljs-params,
+.adoc .hljs-attribute {
+  color: var(--hl-attr);
+}
+
+.adoc .hljs-meta,
+.adoc .hljs-doctag,
+.adoc .hljs-deletion {
+  color: var(--hl-meta);
+}
+
 /* mermaid 図(ui/mermaid.ts がコードブロックを差し替える) */
 .adoc .mermaid-diagram {
   margin: 1em 0;
@@ -890,6 +960,13 @@ body {
     --border: #e1e1e8 !important;
     --accent: #6d5bd0 !important;
     --code-bg: #ececf1 !important;
+    --hl-keyword: #b0362c !important;
+    --hl-string: #2f7d3a !important;
+    --hl-comment: #6f6f7e !important;
+    --hl-number: #a35a00 !important;
+    --hl-title: #1b5fbd !important;
+    --hl-attr: #6d5bd0 !important;
+    --hl-meta: #6f6f7e !important;
   }
 
   /* ブラウザは既定で背景色を印刷から省く(WebView2/Chromium も同様)。
