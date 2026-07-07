@@ -241,6 +241,49 @@ export function createSettingsDialog(
   debounceRow.appendChild(debounceInput);
   form.appendChild(debounceRow);
 
+  // --- 作図(リモートレンダリング。既定 OFF: 文書内容を外部サーバーへ送信するため) ---
+  const krokiHeading = document.createElement("h3");
+  krokiHeading.className = "settings-section-title";
+  krokiHeading.textContent = "作図(リモートレンダリング)";
+  form.appendChild(krokiHeading);
+
+  const krokiNote = document.createElement("p");
+  krokiNote.className = "settings-note";
+  krokiNote.textContent =
+    "PlantUML / Draw.io ブロックを図として表示するには、ソースを下記サーバーへ送信します。";
+  form.appendChild(krokiNote);
+
+  const krokiEnabledRow = document.createElement("label");
+  krokiEnabledRow.className = "settings-row";
+  const krokiEnabledSpan = document.createElement("span");
+  krokiEnabledSpan.textContent = "PlantUML / Draw.io を有効にする";
+  const krokiEnabledInput = document.createElement("input");
+  krokiEnabledInput.type = "checkbox";
+  krokiEnabledInput.checked = settings.krokiEnabled;
+  krokiEnabledInput.addEventListener("change", () => {
+    settings = mergeSettings({ ...settings, krokiEnabled: krokiEnabledInput.checked });
+    onChange(settings);
+  });
+  krokiEnabledRow.appendChild(krokiEnabledSpan);
+  krokiEnabledRow.appendChild(krokiEnabledInput);
+  form.appendChild(krokiEnabledRow);
+
+  const krokiUrlRow = document.createElement("label");
+  krokiUrlRow.className = "settings-row";
+  const krokiUrlSpan = document.createElement("span");
+  krokiUrlSpan.textContent = "Kroki サーバー URL";
+  const krokiUrlInput = document.createElement("input");
+  krokiUrlInput.type = "text";
+  krokiUrlInput.value = settings.krokiServerUrl;
+  krokiUrlInput.addEventListener("change", () => {
+    settings = mergeSettings({ ...settings, krokiServerUrl: krokiUrlInput.value });
+    krokiUrlInput.value = settings.krokiServerUrl;
+    onChange(settings);
+  });
+  krokiUrlRow.appendChild(krokiUrlSpan);
+  krokiUrlRow.appendChild(krokiUrlInput);
+  form.appendChild(krokiUrlRow);
+
   const footer = document.createElement("div");
   footer.className = "settings-footer";
   const closeButton = document.createElement("button");
@@ -261,6 +304,8 @@ export function createSettingsDialog(
       previewFontInput.value = String(settings.previewFontSize);
       previewFamily.input.value = settings.previewFontFamily;
       debounceInput.value = String(settings.previewDebounceMs);
+      krokiEnabledInput.checked = settings.krokiEnabled;
+      krokiUrlInput.value = settings.krokiServerUrl;
       dialogEl.showModal();
     },
   };

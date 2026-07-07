@@ -1121,6 +1121,31 @@ body {
   text-align: right;
 }
 
+.settings-row input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.settings-row input[type="text"] {
+  width: 14rem;
+}
+
+.settings-section-title {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+  border-top: 1px solid var(--border);
+  padding-top: 0.9rem;
+}
+
+.settings-note {
+  margin: -0.4rem 0 0;
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+}
+
 .settings-footer {
   display: flex;
   justify-content: flex-end;
