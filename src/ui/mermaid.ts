@@ -7,43 +7,6 @@ import { sanitizeMermaidSvg } from "../render";
 
 type MermaidModule = typeof import("mermaid").default;
 
-// mermaid 標準の default/dark テーマは Slate パレットと馴染まない(dark は緑がかった
-// グレー)。mermaid の "base" テーマ + themeVariables で Slate のトークンに合わせる。
-// 値は styles.css の :root(ライト)/ [data-theme="dark"] と対応させること
-// (どちらかを変えたら両方直す)。図はプレビューでは #preview-pane(--bg 地)、
-// エクスポートでは白背景の上に載る。
-const FONT_FAMILY =
-  '-apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif';
-
-const THEME_VARIABLES: Record<MermaidTheme, Record<string, string>> = {
-  default: {
-    darkMode: "false",
-    background: "#ffffff", // --bg
-    primaryColor: "#ececf1", // --bg-raised(ノードの面)
-    primaryBorderColor: "#c7c7d2", // --border より一段濃くして輪郭を出す
-    primaryTextColor: "#26262e", // --fg
-    secondaryColor: "#f4f4f7", // --bg-subtle
-    tertiaryColor: "#ffffff",
-    lineColor: "#6f6f7e", // --fg-muted(エッジ線)
-    textColor: "#26262e", // --fg(ラベル)
-    edgeLabelBackground: "#ffffff", // --bg
-    fontFamily: FONT_FAMILY,
-  },
-  dark: {
-    darkMode: "true",
-    background: "#1b1b22", // --bg
-    primaryColor: "#202028", // --bg-raised(ノードの面)
-    primaryBorderColor: "#3a3a46", // --border より一段明るくして輪郭を出す
-    primaryTextColor: "#dcdce4", // --fg
-    secondaryColor: "#26262f", // --code-bg
-    tertiaryColor: "#16161c", // --bg-subtle
-    lineColor: "#8d8da0", // --fg-muted(エッジ線)
-    textColor: "#dcdce4", // --fg(ラベル)
-    edgeLabelBackground: "#1b1b22", // --bg
-    fontFamily: FONT_FAMILY,
-  },
-};
-
 let mermaidPromise: Promise<MermaidModule> | undefined;
 let initializedTheme: MermaidTheme | undefined;
 
@@ -54,10 +17,7 @@ async function loadMermaid(theme: MermaidTheme): Promise<MermaidModule> {
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: "strict",
-      // Slate 準拠の配色は themeVariables で与える。"base" は変数で全面上書きできる
-      // カスタム用テーマ(default/dark 固定の配色を避ける)
-      theme: "base",
-      themeVariables: THEME_VARIABLES[theme],
+      theme,
       // エラー時に body へエラー図を勝手に注入させない(エラー表示は自前で出す)
       suppressErrorRendering: true,
       // ラベルを foreignObject 内 HTML ではなく純粋な SVG text で出させる。
