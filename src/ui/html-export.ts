@@ -11,6 +11,7 @@ import { convertToStandaloneHtml } from "../render";
 import { decorateAdmonitionIcons } from "./admonition-icons";
 import { decorateChecklists } from "./checklist-decoration";
 import { decorateCodeBlocks } from "./code-highlight";
+import { renderKrokiBlocks } from "./kroki";
 import { renderMermaidBlocks } from "./mermaid";
 
 // 抽出した .adoc ルールは var(--bg) 等を参照するだけで、ページ全体(html/body)の
@@ -30,7 +31,10 @@ body {
 }`;
 
 /** アドモニションアイコン等を装飾し、プレビューと見た目・構成を揃えたスタンドアロン HTML を作る */
-export async function buildExportHtml(source: string): Promise<string> {
+export async function buildExportHtml(
+  source: string,
+  kroki?: { enabled: boolean; serverUrl: string },
+): Promise<string> {
   const html = convertToStandaloneHtml(source);
   const doc = new DOMParser().parseFromString(html, "text/html");
 
@@ -42,6 +46,13 @@ export async function buildExportHtml(source: string): Promise<string> {
   // エクスポートはライト固定なので default テーマで描く。焼き込む SVG 自体は
   // renderMermaidBlocks 内で sanitizeMermaidSvg を通る(パススルー等の他要素には触れない)。
   await renderMermaidBlocks(doc, "default");
+
+  // Kroki(PlantUML / Draw.io)はオプトイン設定が有効なときだけ焼き込む
+  // (無効ならエクスポートのためだけに文書内容を外部へ送信しない)。
+  // 失敗したブロックは renderKrokiBlocks 内でコードブロックのまま残る。
+  if (kroki?.enabled) {
+    await renderKrokiBlocks(doc, { serverUrl: kroki.serverUrl });
+  }
 
   // ライブプレビューは :author: があってもタイトルのみでバイラインを出さないため、
   // standalone: true が自動生成する著者バイラインを削除して挙動を揃える
