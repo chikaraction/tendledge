@@ -3,7 +3,8 @@
 
 == コードブロック(リスティングブロック)
 
-`----` で囲むとコードブロックになり、`[source,言語名]` で言語を指定できます。
+`----` で囲むとコードブロックになり、`[source,言語名]` で言語を指定すると
+シンタックスハイライトが付きます。
 
 [source,javascript]
 ----
@@ -11,11 +12,36 @@ const greet = (name) => `Hello, ${name}!`;
 console.log(greet("AsciiDoc"));
 ----
 
+[source,python]
+----
+def greet(name: str) -> str:
+    # コメントもハイライトされます
+    return f"Hello, {name}!"
+----
+
 [source,rust]
 ----
 fn main() {
     println!("Hello, AsciiDoc!");
 }
+----
+
+[source,json]
+----
+{
+  "name": "AsciiDoc Editor",
+  "milestone": 10
+}
+----
+
+対応していない言語(例: `plantuml`)や `[source]` の言語指定なしの場合は、
+色付けなしのプレーンな表示になります。
+
+[source,plantuml]
+----
+@startuml
+Alice -> Bob: Hello
+@enduml
 ----
 
 == リテラルブロック
