@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { convertToPreviewHtml, sanitizePreviewHtml } from "./render";
+import { convertToPreviewHtml, sanitizeMermaidSvg, sanitizePreviewHtml } from "./render";
 
 // 保管庫機能で第三者の .adoc を開く前提のため、プレビューは信頼できない入力として扱う。
 // AsciiDoc のパススルーブロック(++++)は safe: "safe" でも生 HTML を素通しするので、
@@ -42,5 +42,40 @@ describe("sanitizePreviewHtml: プレビュー HTML のサニタイズ", () => {
     const source = ["++++", "<kbd>Ctrl</kbd>+<kbd>S</kbd>", "++++"].join("\n");
     const sanitized = sanitizePreviewHtml(convertToPreviewHtml(source));
     expect(sanitized).toContain("<kbd>");
+  });
+});
+
+// mermaid の生成 SVG はサニタイズ済み DOM のテキスト起点なので理論上安全だが、
+// mermaid 側の脆弱性への保険として挿入前に SVG プロファイルで再サニタイズする。
+describe("sanitizeMermaidSvg: mermaid 生成 SVG のサニタイズ", () => {
+  it("script タグを除去する", () => {
+    const svg = '<svg viewBox="0 0 10 10"><script>window.pwned = true</script><text>A</text></svg>';
+    const sanitized = sanitizeMermaidSvg(svg);
+    expect(sanitized).not.toContain("<script>");
+    expect(sanitized).toContain("<text>");
+  });
+
+  it("イベント属性(onclick 等)を除去する", () => {
+    const svg = '<svg><a onclick="window.pwned = true"><text>x</text></a></svg>';
+    expect(sanitizeMermaidSvg(svg)).not.toContain("onclick");
+  });
+
+  it("foreignObject を除去する(htmlLabels 無効化により図はこれに依存しない)", () => {
+    const svg = "<svg><foreignObject><div>label</div></foreignObject><text>A</text></svg>";
+    const sanitized = sanitizeMermaidSvg(svg);
+    expect(sanitized).not.toContain("foreignObject");
+    expect(sanitized).toContain("<text>");
+  });
+
+  it("mermaid の配色が載る style 要素と描画要素(g/rect/path/text/marker)は残す", () => {
+    const svg =
+      '<svg viewBox="0 0 10 10"><style>.node { fill: red; }</style>' +
+      '<marker id="arrow"><path d="M0,0"/></marker>' +
+      '<g class="node"><rect width="10" height="10"/><text>A</text></g></svg>';
+    const sanitized = sanitizeMermaidSvg(svg);
+    expect(sanitized).toContain("<style>");
+    expect(sanitized).toContain("<marker");
+    expect(sanitized).toContain("<rect");
+    expect(sanitized).toContain("<text>");
   });
 });

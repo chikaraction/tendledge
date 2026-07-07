@@ -5,6 +5,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { readDir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { type MermaidTheme, resolveMermaidTheme } from "./core/diagram";
 import { createDocumentStore } from "./core/documents";
 import { basename, joinPath, suggestedExportName } from "./core/paths";
 import { resolveImagePath } from "./core/preview-links";
@@ -50,6 +51,20 @@ const vaultNameEl = document.getElementById("vault-name")!;
 
 const statusbar = createStatusbar(document.getElementById("statusbar")!);
 
+// 「いま適用されている設定」の唯一の置き場。ダイアログとメニューバーの両方から
+// updateSettings() 経由で更新される。プレビューの初期描画(モジュール評価中)が
+// mermaid テーマ解決で参照するため、配線より前に宣言しておく必要がある。
+let currentSettings: Settings = { ...DEFAULT_SETTINGS };
+// テーマ "system" のときの実効テーマ判定(mermaid 図のテーマ解決に使う)
+const prefersDarkMedia = window.matchMedia("(prefers-color-scheme: dark)");
+// 直近でプレビューに焼き込んだ mermaid テーマ。これが変わったら図を描き直す
+// (配色が SVG に焼き込まれるため CSS では追従できない)。初回描画はデフォルト設定で
+// 走るので、その実効テーマで初期化しておく。
+let lastMermaidTheme: MermaidTheme = resolveMermaidTheme(
+  DEFAULT_SETTINGS.theme,
+  prefersDarkMedia.matches,
+);
+
 // ---------------------------------------------------------------------------
 // ドキュメント(タブ)状態とエディタ
 // ---------------------------------------------------------------------------
@@ -72,7 +87,13 @@ const preview = createPreview({
       return undefined;
     }
   },
+  // mermaid の配色は SVG に焼き込まれるため、描画時点の実効テーマを毎回解決する。
+  // 印刷時だけは mermaidThemeOverride でライト(default)に一時上書きする。
+  mermaidTheme: () =>
+    mermaidThemeOverride ?? resolveMermaidTheme(currentSettings.theme, prefersDarkMedia.matches),
 });
+// 印刷前の一時テーマ上書き(exportPdf が設定/解除する)
+let mermaidThemeOverride: MermaidTheme | undefined;
 
 const editor = createEditor({
   parent: document.getElementById("editor-pane")!,
@@ -111,7 +132,7 @@ function switchEditorTo(id: number, previousId?: number): void {
   const doc = store.list().find((d) => d.id === id)!;
   const state = editorStates.get(id) ?? editor.newState(doc.content);
   view.setState(state);
-  preview.render(view.state.doc.toString());
+  void preview.render(view.state.doc.toString());
   syncStatusbarFromView();
   updateTabs();
   fileTree.setActivePath(doc.path);
@@ -186,7 +207,7 @@ async function doOpenFolder(): Promise<void> {
 }
 
 // 初回描画(デバウンスなしで即時)
-preview.render(view.state.doc.toString());
+void preview.render(view.state.doc.toString());
 syncStatusbarFromView();
 updateTabs();
 view.focus();
@@ -298,7 +319,7 @@ async function doSaveAs(): Promise<void> {
 // HTML / PDF エクスポート
 // ---------------------------------------------------------------------------
 async function exportHtml(): Promise<void> {
-  const html = buildExportHtml(view.state.doc.toString());
+  const html = await buildExportHtml(view.state.doc.toString());
   const path = await save({
     filters: [{ name: "HTML", extensions: ["html"] }],
     defaultPath: suggestedExportName(store.activeDoc().path, "html"),
@@ -307,18 +328,28 @@ async function exportHtml(): Promise<void> {
   await writeTextFile(path, html);
 }
 
-function exportPdf(): void {
+async function exportPdf(): Promise<void> {
   // 実際の書き出しはブラウザ/OSの印刷ダイアログ(「PDFとして保存」)に委ねる。
   // 対象コンテンツの絞り込みは styles.css の @media print が担う。
+  // @media print はライト配色を強制するが、ダークで焼き込み済みの mermaid SVG は
+  // ダークのまま出てしまう。印刷前に default テーマで図を描き直し、印刷後に戻す。
+  const needsSwap =
+    resolveMermaidTheme(currentSettings.theme, prefersDarkMedia.matches) === "dark";
+  if (needsSwap) {
+    mermaidThemeOverride = "default";
+    await preview.render(view.state.doc.toString());
+  }
   window.print();
+  if (needsSwap) {
+    mermaidThemeOverride = undefined;
+    await preview.render(view.state.doc.toString());
+  }
 }
 
 // ---------------------------------------------------------------------------
 // 設定(テーマ・エディタのフォントサイズ・プレビューのデバウンス)
 // ---------------------------------------------------------------------------
-// 「いま適用されている設定」の唯一の置き場。ダイアログとメニューバーの両方から
-// updateSettings() 経由で更新される。
-let currentSettings: Settings = { ...DEFAULT_SETTINGS };
+// currentSettings の宣言はファイル冒頭(プレビュー配線の前)にある
 let settingsDialog: SettingsDialogController | undefined;
 
 /** 設定を DOM/プレビューへ適用する(見た目・挙動の反映のみ。保存はしない) */
@@ -332,6 +363,12 @@ function applySettings(settings: Settings): void {
   document.documentElement.style.setProperty(
     "--preview-font-size",
     `${settings.previewFontSize}px`,
+  );
+  // mermaid 図は SVG に寸法が焼き込まれておりフォントサイズ変数では伸縮しないため、
+  // 既定 16px に対する倍率を渡して図全体を拡大縮小させる(styles.css の zoom)
+  document.documentElement.style.setProperty(
+    "--diagram-scale",
+    String(settings.previewFontSize / DEFAULT_SETTINGS.previewFontSize),
   );
   // フォントファミリ未指定(空)のときは変数ごと外して CSS 側のフォールバックに任せる
   // (空文字列を設定すると var() の第2引数が使われず、フォント指定が無効になるため)
@@ -349,7 +386,19 @@ function applySettings(settings: Settings): void {
     document.documentElement.style.removeProperty("--preview-font-family");
   }
   preview.setDebounceMs(settings.previewDebounceMs);
+  rerenderPreviewIfMermaidThemeChanged();
 }
+
+/** mermaid の実効テーマが前回描画時から変わっていたら、図を描き直す */
+function rerenderPreviewIfMermaidThemeChanged(): void {
+  const next = resolveMermaidTheme(currentSettings.theme, prefersDarkMedia.matches);
+  if (next === lastMermaidTheme) return;
+  lastMermaidTheme = next;
+  void preview.render(view.state.doc.toString());
+}
+
+// テーマ "system" のまま OS のダーク設定が切り替わったときも図を追従させる
+prefersDarkMedia.addEventListener("change", rerenderPreviewIfMermaidThemeChanged);
 
 function updateSettings(next: Settings): void {
   currentSettings = next;
@@ -396,7 +445,7 @@ const menubar = createMenubar(document.getElementById("menubar")!, [
         label: "PDF / 印刷...",
         shortcut: "Ctrl+P",
         title: "現在のテーマ設定に関わらず、常にライト配色で出力されます",
-        onSelect: exportPdf,
+        onSelect: () => void exportPdf(),
       },
       "separator",
       { label: "設定...", onSelect: () => settingsDialog?.open() },
@@ -462,7 +511,7 @@ setupShortcuts({
   onOpen: () => void doOpen(),
   onSave: () => void doSave(),
   onSaveAs: () => void doSaveAs(),
-  onPrint: exportPdf,
+  onPrint: () => void exportPdf(),
   onCloseTab: () => void closeTab(store.activeDoc().id),
   onNextTab: () => {
     const previousId = store.activeDoc().id;

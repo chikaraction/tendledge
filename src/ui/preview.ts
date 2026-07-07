@@ -6,13 +6,15 @@ import {
   editorLineForPreviewScrollTop,
   previewScrollTopForLine,
 } from "../core/scroll-sync";
+import type { MermaidTheme } from "../core/diagram";
 import { decorateAdmonitionIcons } from "./admonition-icons";
 import { decorateChecklists } from "./checklist-decoration";
+import { renderMermaidBlocks } from "./mermaid";
 import { convertToPreviewHtml, sanitizePreviewHtml } from "../render";
 
 export interface PreviewController {
-  /** 即時に変換・描画する(初回描画用) */
-  render(source: string): void;
+  /** 即時に変換・描画する。mermaid 図の非同期描画まで含めて完了で解決する */
+  render(source: string): Promise<void>;
   /** デバウンス付きで変換を予約する(入力中用) */
   scheduleRender(source: string): void;
   /** エディタの行番号に対応するプレビューの scrollTop を返す */
@@ -36,8 +38,10 @@ export function createPreview(opts: {
   debounceMs?: number;
   /** 相対パス画像の src を表示可能な URL に解決する(不要なら undefined を返す) */
   resolveImageSrc?: (src: string) => string | undefined;
+  /** mermaid 図に使うテーマの提供元(未指定なら図はコードブロックのまま表示) */
+  mermaidTheme?: () => MermaidTheme;
 }): PreviewController {
-  const { previewEl, paneEl, statusEl, resolveImageSrc } = opts;
+  const { previewEl, paneEl, statusEl, resolveImageSrc, mermaidTheme } = opts;
   let debounceMs = opts.debounceMs ?? 300;
 
   // ソースの見出し行とプレビューの h1〜h6 を出現順で対応付ける。
@@ -82,21 +86,46 @@ export function createPreview(opts: {
     });
   }
 
-  function render(source: string): void {
+  // mermaid のレンダリングは非同期(初回は本体の遅延ロードも走る)ため、
+  // 描画のたびに世代を進め、完了時に世代が古くなっていた結果は捨てる。
+  // 古い世代の DOM 操作自体は innerHTML 差し替えで切り離された要素に
+  // 向かうので実害はなく、ガードすべきはアンカー再構築だけ。
+  let renderGeneration = 0;
+
+  async function decorateMermaid(source: string, generation: number): Promise<void> {
+    if (!mermaidTheme) return;
+    try {
+      const rendered = await renderMermaidBlocks(previewEl, mermaidTheme());
+      if (!rendered || generation !== renderGeneration) return;
+      // 図の挿入で要素の高さが変わるので、スクロール同期のアンカーを取り直す
+      rebuildHeadingAnchors(source);
+    } catch (err) {
+      // 図のレンダリング失敗でプレビュー全体は壊さない
+      console.error(err);
+    }
+  }
+
+  function render(source: string): Promise<void> {
     const start = performance.now();
     try {
+      const generation = ++renderGeneration;
       previewEl.innerHTML = sanitizePreviewHtml(convertToPreviewHtml(source));
       decorateImages();
       decorateChecklists(previewEl);
       decorateAdmonitionIcons(previewEl);
       rebuildHeadingAnchors(source);
+      // 図の完了を待ちたい呼び出し元(印刷前のテーマ差し替え)のために返す。
+      // 変換 ms のステータスは同期部分だけを計測する(図はキャッシュが効けばほぼゼロ)
+      const diagramsDone = decorateMermaid(source, generation);
       statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;
       statusEl.classList.remove("error");
+      return diagramsDone;
     } catch (err) {
       // 変換エラーでも直前のプレビューは保持し、ステータスだけ知らせる
       statusEl.textContent = "変換エラー";
       statusEl.classList.add("error");
       console.error(err);
+      return Promise.resolve();
     }
   }
 

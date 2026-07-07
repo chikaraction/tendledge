@@ -4,6 +4,27 @@ import DOMPurify from "dompurify";
 
 const asciidoctor = Asciidoctor();
 
+// [mermaid] ブロックを [source,mermaid] と同一の出力に正規化する拡張。
+// 素の Asciidoctor では [mermaid] スタイルは HTML に痕跡を残さない
+// (ただの listingblock になり class も data 属性も付かない)ことを実測で確認済み。
+// 正規化により後段(プレビューの図レンダリング・エクスポート焼き込み)は
+// code[data-lang="mermaid"] の1経路だけを見ればよくなる。
+// グローバル登録なのは、Extensions.create() の registry を convert に渡す方式だと
+// 最初の1回しか拡張が効かない(2回目から黙って素通しになる)ことを実測したため。
+asciidoctor.Extensions.register(function () {
+  this.block(function () {
+    this.named("mermaid");
+    this.onContexts("listing", "literal");
+    this.parseContentAs("raw");
+    this.process(function (parent, reader) {
+      return this.createBlock(parent, "listing", reader.getLines().join("\n"), {
+        style: "source",
+        language: "mermaid",
+      });
+    });
+  });
+});
+
 const BASE_ATTRIBUTES = {
   showtitle: true, // 文書タイトル(= 見出し)をプレビューに表示
   sectnums: false,
@@ -29,6 +50,18 @@ export function convertToPreviewHtml(source: string): string {
  */
 export function sanitizePreviewHtml(html: string): string {
   return DOMPurify.sanitize(html);
+}
+
+/**
+ * mermaid が生成した SVG を挿入前にサニタイズする(多層防御)。
+ * 入力はサニタイズ済み DOM の textContent 起点なので理論上は安全だが、
+ * mermaid 側の脆弱性への保険として SVG プロファイルで通す。
+ * mermaid の配色は SVG 内の <style> に載っており、SVG プロファイルは
+ * <style> を残し foreignObject / script / イベント属性を落とすことを
+ * テストで固定している(htmlLabels を無効化して foreignObject に依存しない)。
+ */
+export function sanitizeMermaidSvg(svg: string): string {
+  return DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
 }
 
 /**

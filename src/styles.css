@@ -617,6 +617,48 @@ body {
   padding: 0;
 }
 
+/* mermaid 図(ui/mermaid.ts がコードブロックを差し替える) */
+.adoc .mermaid-diagram {
+  margin: 1em 0;
+  text-align: center;
+  overflow-x: auto; /* 横幅を超える図はコンテナ内でスクロール */
+}
+
+.adoc .mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+  /* プレビューのフォントサイズ設定(既定 16px 比)に連動して図全体を拡大縮小する。
+     mermaid の SVG は寸法が焼き込まれるため font-size では伸縮しない。
+     zoom はレイアウトごと拡縮するので、後続要素の位置やスクロール同期も自然に追従する
+     (エクスポート HTML では変数未定義 → 1 倍のまま) */
+  zoom: var(--diagram-scale, 1);
+}
+
+/* mermaid 本体の遅延ロード中(初回のみ)であることを示す */
+.adoc .mermaid-loading {
+  opacity: 0.6;
+}
+
+.adoc .mermaid-loading::after {
+  content: "図を準備中…";
+  display: block;
+  font-size: 0.8rem;
+  color: var(--fg-muted);
+  margin-top: 0.3em;
+}
+
+/* 構文エラー時はコードブロックを残し、直下に知らせる */
+.adoc .mermaid-error {
+  font-size: 0.8rem;
+  color: var(--error);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4em 0.8em;
+  margin: 0.4em 0 1em;
+  white-space: pre-wrap;
+}
+
 /* 例示ブロック(====)は枠線の面、サイドバー(****)は持ち上がった背景面。
    面の作りを変えることで、相互にネストしたときにも境界が判別できる */
 .adoc .exampleblock {
@@ -895,7 +937,8 @@ body {
   .adoc .listingblock,
   .adoc .admonitionblock,
   .adoc table.tableblock,
-  .adoc .imageblock {
+  .adoc .imageblock,
+  .adoc .mermaid-diagram {
     break-inside: avoid;
   }
 
