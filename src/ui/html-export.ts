@@ -2,13 +2,15 @@
 // convertToStandaloneHtml() は Asciidoctor.js の素の出力なので、ライブプレビューと
 // 見た目・挙動が揃うように以下を補う:
 // - アドモニションアイコン・チェックリストのチェックボックス化(プレビューと同じ DOM 装飾)
-// - .adoc スコープの CSS(ライト固定。styles.css から抽出)
+// - コードブロックのシンタックスハイライト(スクリプト同梱なしで静的に焼き込む)
+// - .adoc スコープの CSS(ライト固定。styles.css から抽出。--hl-* トークンも含む)
 // - 著者バイライン(プレビューには出ない要素なので、エクスポートでも消して合わせる)
 import stylesCssRaw from "../styles.css?raw";
 import { extractLightAdocCss } from "../core/export-css";
 import { convertToStandaloneHtml } from "../render";
 import { decorateAdmonitionIcons } from "./admonition-icons";
 import { decorateChecklists } from "./checklist-decoration";
+import { decorateCodeBlocks } from "./code-highlight";
 import { renderMermaidBlocks } from "./mermaid";
 
 // 抽出した .adoc ルールは var(--bg) 等を参照するだけで、ページ全体(html/body)の
@@ -34,6 +36,7 @@ export async function buildExportHtml(source: string): Promise<string> {
 
   decorateAdmonitionIcons(doc);
   decorateChecklists(doc);
+  decorateCodeBlocks(doc);
 
   // mermaid 図を SVG に焼き込む(スクリプト同梱なし・開くだけで表示)。
   // エクスポートはライト固定なので default テーマで描く。焼き込む SVG 自体は
