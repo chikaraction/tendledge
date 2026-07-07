@@ -82,3 +82,21 @@ Vite のみのブラウザプレビューでは Tauri API(fs / dialog / store)�
       (スクリプト同梱なし・外部取得なしで開くだけで見える)
 - [ ] ダークテーマ状態で Ctrl+P → 印刷プレビューの図がライト配色になっている
       (画面のダーク図が印刷前に一時的にライトへ描き直され、印刷後に元へ戻る)
+
+### 作図 / Kroki(PlantUML / Draw.io)(M12)
+- [ ] 設定で「PlantUML / Draw.io を有効にする」がオフ(既定)のまま
+      07-diagrams.adoc の PlantUML / Draw.io 節を開いてもリクエストが
+      一切飛ばない(コードブロックのまま表示される)
+- [ ] 設定でオンにすると、CSP を変更していないのに PlantUML の図が表示される
+      (tauri-plugin-http が Rust 側で通信するため、静的 CSP の
+      connect-src の制約を受けないことの確認。WebView の DevTools
+      コンソールに CSP 違反エラーが出ていないことも確認する)
+- [ ] Draw.io 節は kroki.io のコンパニオンサービス停止状況次第でエラー表示に
+      なりうる(self-host なら表示される想定。エラーでもプレビュー全体は壊れない)
+- [ ] krokiEnabled・Kroki サーバー URL を変更してアプリを再起動 →
+      設定が残っている(settings.json への永続化)
+- [ ] オンの状態で 07-diagrams.adoc を HTML エクスポート → 生成 HTML を
+      *ネットワークを切った状態* のブラウザで開き、PlantUML の図が
+      (data URI に焼き込まれているため)そのまま表示される
+- [ ] オフの状態で同じ文書を HTML エクスポート → エクスポート中に
+      Kroki サーバーへのリクエストが飛ばず、コードブロックのまま出力される
