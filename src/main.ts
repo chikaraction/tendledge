@@ -78,6 +78,10 @@ const store = createDocumentStore({ initialContent: sampleDoc });
 // タブごとの EditorState(undo 履歴・カーソル位置を保持)。キーはドキュメント ID。
 const editorStates = new Map<number, EditorState>();
 
+// タブごとのスクロール位置。EditorState はスクロール位置を含まないため、
+// setState だけだと前のタブの scrollTop が新しいタブに引き継がれてしまう。
+const tabScrollTops = new Map<number, { editor: number; preview: number }>();
+
 const preview = createPreview({
   previewEl,
   paneEl: previewPaneEl,
@@ -137,11 +141,20 @@ function updateTabs(): void {
 function switchEditorTo(id: number, previousId?: number): void {
   if (previousId !== undefined && previousId !== id) {
     editorStates.set(previousId, view.state);
+    tabScrollTops.set(previousId, {
+      editor: view.scrollDOM.scrollTop,
+      preview: preview.paneEl.scrollTop,
+    });
   }
   const doc = store.list().find((d) => d.id === id)!;
   const state = editorStates.get(id) ?? editor.newState(doc.content);
   view.setState(state);
-  void preview.render(view.state.doc.toString());
+  const scroll = tabScrollTops.get(id);
+  view.scrollDOM.scrollTop = scroll?.editor ?? 0;
+  // プレビューは描画完了で内容が入れ替わってから位置を戻す(未退避のタブは先頭)
+  void preview.render(view.state.doc.toString()).then(() => {
+    preview.paneEl.scrollTop = scroll?.preview ?? 0;
+  });
   syncStatusbarFromView();
   updateTabs();
   fileTree.setActivePath(doc.path);
@@ -162,6 +175,7 @@ async function closeTab(id: number): Promise<void> {
   }
   const previousId = store.activeDoc().id;
   editorStates.delete(id);
+  tabScrollTops.delete(id);
   store.close(id);
   const nextActive = store.activeDoc().id;
   if (previousId === id || nextActive !== previousId) {
