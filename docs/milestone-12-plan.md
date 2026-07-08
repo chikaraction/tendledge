@@ -26,6 +26,15 @@ kroki.io に対して実リクエストで確認した(推測ではない):
   (図種別が違うだけ)なので含めるが、動作確認は「エラー表示が正しく出ること」まで。
   実際に図が出るのは self-host Kroki(`kroki-diagramsnet` コンパニオン込み)か
   kroki.io 復旧後になる。この制約はサンプル文書にも明記する。
+- 追加調査(2026-07-08、GitHub 検索で確認): kroki.io トップページと
+  `yuzutech/kroki` リポジトリの GitHub topics には、他の図表エンジン
+  (BlockDiag・PlantUML・Mermaid・GraphViz 等)は載っているのに
+  **diagramsnet/draw.io だけが一切登場しない**。一方でリポジトリの
+  ソースコードには `server/src/main/java/io/kroki/server/service/Diagramsnet.java`
+  が実在する。つまり draw.io 対応は Kroki 本体には実装されているが、
+  **公式に前面へ出して案内されている機能ではない**(非公式・裏メニュー的な
+  位置づけ)。上記の 503(コンパニオン未起動)と合わせて、公開インスタンス
+  kroki.io での draw.io サポートは実質的に非サポートに近いと判断できる。
 
 ## スコープ
 
