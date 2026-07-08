@@ -39,6 +39,12 @@ describe("convertToPreviewHtml: [mermaid] ブロックの正規化", () => {
     expect(html).toContain('data-lang="js"');
     expect(html).not.toContain("mermaid");
   });
+
+  it("ブロックタイトル(`.タイトル`)が正規化後も残る(createBlock は引き継がないため明示的に移す)", () => {
+    const source = [".シーケンス図", "[mermaid]", "----", "graph TD; A-->B;", "----"].join("\n");
+    const html = convertToPreviewHtml(source);
+    expect(html).toContain('<div class="title">シーケンス図</div>');
+  });
 });
 
 describe("convertToStandaloneHtml: [mermaid] ブロックの正規化", () => {
@@ -70,6 +76,14 @@ describe("convertToPreviewHtml: [plantuml] ブロックの正規化", () => {
     convertToPreviewHtml(source);
     const second = convertToPreviewHtml(source);
     expect(second).toContain('data-lang="plantuml"');
+  });
+
+  it("ブロックタイトル(`.タイトル`)が正規化後も残る", () => {
+    const source = [".シーケンス図", "[plantuml]", "----", "Alice -> Bob: hello", "----"].join(
+      "\n",
+    );
+    const html = convertToPreviewHtml(source);
+    expect(html).toContain('<div class="title">シーケンス図</div>');
   });
 });
 

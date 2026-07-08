@@ -20,11 +20,17 @@ function registerNormalizeBlock(name: string, language: string): void {
       this.named(name);
       this.onContexts("listing", "literal");
       this.parseContentAs("raw");
-      this.process(function (parent, reader) {
-        return this.createBlock(parent, "listing", reader.getLines().join("\n"), {
+      this.process(function (parent, reader, attrs) {
+        const block = this.createBlock(parent, "listing", reader.getLines().join("\n"), {
           style: "source",
           language,
         });
+        // createBlock はタイトル(`.タイトル` 記法)を引き継がないため、
+        // 元のブロックの attrs から明示的に移す(引き継がないと
+        // ブロック丸ごとの差し替え時にタイトルが消える)
+        const title = attrs.title as string | undefined;
+        if (title) block.setTitle(title);
+        return block;
       });
     });
   });

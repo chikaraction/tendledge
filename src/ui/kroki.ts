@@ -77,7 +77,11 @@ async function renderOne(
     img.src = dataUri;
     img.alt = lang;
     figure.appendChild(img);
-    block.replaceWith(figure);
+    // block 全体(.listingblock/.literalblock)を差し替えると、
+    // ブロックタイトル(`.タイトル` 記法の `.title` div)まで消えてしまうため、
+    // コード本体だけを包む .content を差し替える(タイトルは兄弟要素として残す)
+    const target = block.querySelector(":scope > .content") ?? block;
+    target.replaceWith(figure);
   } catch (err) {
     // 失敗時はコードブロックを残し、直下に知らせる(mermaid と同じ思想)
     block.classList.remove("kroki-loading");

@@ -57,7 +57,11 @@ async function renderOne(
     const figure = doc.createElement("div");
     figure.className = "mermaid-diagram";
     figure.innerHTML = svg;
-    block.replaceWith(figure);
+    // block 全体(.listingblock/.literalblock)を差し替えると、
+    // ブロックタイトル(`.タイトル` 記法の `.title` div)まで消えてしまうため、
+    // コード本体だけを包む .content を差し替える(タイトルは兄弟要素として残す)
+    const target = block.querySelector(":scope > .content") ?? block;
+    target.replaceWith(figure);
   } catch (err) {
     // 構文エラー等では図に差し替えず、元のコードブロックを残して直下に知らせる
     // (書きかけの構文が見えるほうが編集体験がよい)
