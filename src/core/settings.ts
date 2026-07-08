@@ -19,6 +19,10 @@ export interface Settings {
   previewFontFamily: string;
   /** プレビュー再描画のデバウンス時間(ms) */
   previewDebounceMs: number;
+  /** PlantUML / Draw.io を Kroki サーバーへ送ってレンダリングするか(既定 OFF・文書内容の外部送信を伴うため) */
+  krokiEnabled: boolean;
+  /** Kroki サーバーの URL(self-host 対応) */
+  krokiServerUrl: string;
 }
 
 const THEMES: readonly Theme[] = ["light", "dark", "system"];
@@ -38,6 +42,8 @@ export const DEFAULT_SETTINGS: Settings = {
   previewFontSize: 16,
   previewFontFamily: "",
   previewDebounceMs: 300,
+  krokiEnabled: false,
+  krokiServerUrl: "https://kroki.io",
 };
 
 function isTheme(value: unknown): value is Theme {
@@ -53,6 +59,13 @@ function mergeFontFamily(value: unknown, fallback: string): string {
   if (typeof value !== "string") return fallback;
   const trimmed = value.trim();
   return trimmed.length <= FONT_FAMILY_MAX_LENGTH ? trimmed : fallback;
+}
+
+/** http(s):// で始まる URL として妥当なら前後空白を除いた値を、そうでなければ既定値を返す */
+function mergeServerUrl(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  return /^https?:\/\//.test(trimmed) ? trimmed : fallback;
 }
 
 /**
@@ -87,5 +100,10 @@ export function mergeSettings(saved: unknown): Settings {
     )
       ? candidate.previewDebounceMs
       : DEFAULT_SETTINGS.previewDebounceMs,
+    krokiEnabled:
+      typeof candidate.krokiEnabled === "boolean"
+        ? candidate.krokiEnabled
+        : DEFAULT_SETTINGS.krokiEnabled,
+    krokiServerUrl: mergeServerUrl(candidate.krokiServerUrl, DEFAULT_SETTINGS.krokiServerUrl),
   };
 }

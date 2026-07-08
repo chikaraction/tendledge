@@ -11,19 +11,35 @@ const asciidoctor = Asciidoctor();
 // code[data-lang="mermaid"] の1経路だけを見ればよくなる。
 // グローバル登録なのは、Extensions.create() の registry を convert に渡す方式だと
 // 最初の1回しか拡張が効かない(2回目から黙って素通しになる)ことを実測したため。
-asciidoctor.Extensions.register(function () {
-  this.block(function () {
-    this.named("mermaid");
-    this.onContexts("listing", "literal");
-    this.parseContentAs("raw");
-    this.process(function (parent, reader) {
-      return this.createBlock(parent, "listing", reader.getLines().join("\n"), {
-        style: "source",
-        language: "mermaid",
+// [plantuml] / [drawio] も同じ理由(素の Asciidoctor ではスタイルが HTML に
+// 残らない)で source,<lang> に正規化する。[diagramsnet] は Kroki 側の
+// 図種別名なので、Asciidoctor Diagram の慣習である [drawio] のエイリアスとして受ける。
+function registerNormalizeBlock(name: string, language: string): void {
+  asciidoctor.Extensions.register(function () {
+    this.block(function () {
+      this.named(name);
+      this.onContexts("listing", "literal");
+      this.parseContentAs("raw");
+      this.process(function (parent, reader, attrs) {
+        const block = this.createBlock(parent, "listing", reader.getLines().join("\n"), {
+          style: "source",
+          language,
+        });
+        // createBlock はタイトル(`.タイトル` 記法)を引き継がないため、
+        // 元のブロックの attrs から明示的に移す(引き継がないと
+        // ブロック丸ごとの差し替え時にタイトルが消える)
+        const title = attrs.title as string | undefined;
+        if (title) block.setTitle(title);
+        return block;
       });
     });
   });
-});
+}
+
+registerNormalizeBlock("mermaid", "mermaid");
+registerNormalizeBlock("plantuml", "plantuml");
+registerNormalizeBlock("drawio", "drawio");
+registerNormalizeBlock("diagramsnet", "drawio");
 
 const BASE_ATTRIBUTES = {
   showtitle: true, // 文書タイトル(= 見出し)をプレビューに表示

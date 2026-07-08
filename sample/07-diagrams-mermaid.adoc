@@ -130,3 +130,7 @@ Mermaid として解釈できない内容を書くと、図には変換されず
 ----
 これは Mermaid の記法ではありません
 ----
+
+TIP: PlantUML は link:08-diagrams-plantuml.adoc[08-diagrams-plantuml.adoc]、
+Draw.io は link:09-diagrams-drawio.adoc[09-diagrams-drawio.adoc] を参照してください。
+どちらも Kroki 経由のリモートレンダリングが必要です。

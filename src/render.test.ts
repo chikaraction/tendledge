@@ -39,6 +39,12 @@ describe("convertToPreviewHtml: [mermaid] ブロックの正規化", () => {
     expect(html).toContain('data-lang="js"');
     expect(html).not.toContain("mermaid");
   });
+
+  it("ブロックタイトル(`.タイトル`)が正規化後も残る(createBlock は引き継がないため明示的に移す)", () => {
+    const source = [".シーケンス図", "[mermaid]", "----", "graph TD; A-->B;", "----"].join("\n");
+    const html = convertToPreviewHtml(source);
+    expect(html).toContain('<div class="title">シーケンス図</div>');
+  });
 });
 
 describe("convertToStandaloneHtml: [mermaid] ブロックの正規化", () => {
@@ -46,5 +52,73 @@ describe("convertToStandaloneHtml: [mermaid] ブロックの正規化", () => {
     const source = ["= 文書", "", "[mermaid]", "----", "graph TD; A-->B;", "----"].join("\n");
     const html = convertToStandaloneHtml(source);
     expect(html).toContain('data-lang="mermaid"');
+  });
+});
+
+// [plantuml] / [drawio] も mermaid と同じ理由(素の Asciidoctor では
+// スタイルが HTML に残らない)で source,<lang> に正規化する。
+describe("convertToPreviewHtml: [plantuml] ブロックの正規化", () => {
+  it("[plantuml] + ---- が data-lang=\"plantuml\" 付きのコードブロックになる", () => {
+    const source = ["[plantuml]", "----", "Alice -> Bob: hello", "----"].join("\n");
+    const html = convertToPreviewHtml(source);
+    expect(html).toContain('data-lang="plantuml"');
+  });
+
+  it("[source,plantuml] と同一の HTML になる", () => {
+    const block = ["----", "Alice -> Bob: hello", "----"];
+    const fromStyle = convertToPreviewHtml(["[plantuml]", ...block].join("\n"));
+    const fromSource = convertToPreviewHtml(["[source,plantuml]", ...block].join("\n"));
+    expect(fromStyle).toBe(fromSource);
+  });
+
+  it("複数回 convert しても正規化が効き続ける", () => {
+    const source = ["[plantuml]", "----", "Alice -> Bob: hello", "----"].join("\n");
+    convertToPreviewHtml(source);
+    const second = convertToPreviewHtml(source);
+    expect(second).toContain('data-lang="plantuml"');
+  });
+
+  it("ブロックタイトル(`.タイトル`)が正規化後も残る", () => {
+    const source = [".シーケンス図", "[plantuml]", "----", "Alice -> Bob: hello", "----"].join(
+      "\n",
+    );
+    const html = convertToPreviewHtml(source);
+    expect(html).toContain('<div class="title">シーケンス図</div>');
+  });
+});
+
+describe("convertToPreviewHtml: [drawio] / [diagramsnet] ブロックの正規化", () => {
+  it("[drawio] + ---- が data-lang=\"drawio\" 付きのコードブロックになる", () => {
+    const source = ["[drawio]", "----", "<mxfile></mxfile>", "----"].join("\n");
+    const html = convertToPreviewHtml(source);
+    expect(html).toContain('data-lang="drawio"');
+  });
+
+  it("[diagramsnet] は [drawio] と同一の HTML になる(Kroki 側の呼称をエイリアスとして受ける)", () => {
+    const block = ["----", "<mxfile></mxfile>", "----"];
+    const fromDrawio = convertToPreviewHtml(["[drawio]", ...block].join("\n"));
+    const fromDiagramsnet = convertToPreviewHtml(["[diagramsnet]", ...block].join("\n"));
+    expect(fromDiagramsnet).toBe(fromDrawio);
+  });
+
+  it("[source,drawio] と同一の HTML になる", () => {
+    const block = ["----", "<mxfile></mxfile>", "----"];
+    const fromStyle = convertToPreviewHtml(["[drawio]", ...block].join("\n"));
+    const fromSource = convertToPreviewHtml(["[source,drawio]", ...block].join("\n"));
+    expect(fromStyle).toBe(fromSource);
+  });
+});
+
+describe("convertToStandaloneHtml: [plantuml] / [drawio] ブロックの正規化", () => {
+  it("standalone 出力にも data-lang=\"plantuml\" が含まれる", () => {
+    const source = ["= 文書", "", "[plantuml]", "----", "Alice -> Bob: hello", "----"].join("\n");
+    const html = convertToStandaloneHtml(source);
+    expect(html).toContain('data-lang="plantuml"');
+  });
+
+  it("standalone 出力にも data-lang=\"drawio\" が含まれる", () => {
+    const source = ["= 文書", "", "[drawio]", "----", "<mxfile></mxfile>", "----"].join("\n");
+    const html = convertToStandaloneHtml(source);
+    expect(html).toContain('data-lang="drawio"');
   });
 });

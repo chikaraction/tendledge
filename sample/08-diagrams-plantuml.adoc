@@ -1,0 +1,47 @@
+= 作図(PlantUML・Kroki 経由)
+:author: AsciiDoc Editor
+
+CAUTION: この節の図は、link:07-diagrams-mermaid.adoc[Mermaid]とは違い、
+この文書内では完結しません。図のソースを**設定した Kroki サーバーへ送信して**
+SVG を受け取る方式です。「設定」→「作図(リモートレンダリング)」でオプトイン
+(既定は無効)し、サーバー URL(既定 `kroki.io`、self-host も可)を確認してから
+使ってください。オフライン時・サーバーに到達できない場合は、コードブロックの
+下にエラーが表示されます(図には壊れません)。
+
+== 記法
+
+`[plantuml]` ブロック、または `[source,plantuml]` ブロックに PlantUML の
+記法を書きます。どちらでも同じ図になります。
+
+.シーケンス図
+[plantuml]
+----
+Alice -> Bob: 認証要求
+Bob --> Alice: トークン発行
+Alice -> Bob: トークン提示
+Bob --> Alice: 認可完了
+----
+
+.クラス図(source,plantuml)
+[source,plantuml]
+----
+class Document {
+  +String title
+  +String path
+  +Boolean dirty
+  +save()
+}
+class Tab
+Document "1" o-- "1" Tab
+Document <|-- AsciiDocFile
+----
+
+== 構文エラーのとき
+
+Kroki サーバーが「解釈できない」と判断した場合も、Mermaid と同じくコードは
+消えず、エラーメッセージが直下に表示されます。
+
+[plantuml]
+----
+これは PlantUML の記法ではありません
+----
