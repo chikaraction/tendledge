@@ -14,9 +14,15 @@ SVG を受け取る方式です。「設定」→「作図(リモートレンダ
 そのまま書きます。
 
 WARNING: Draw.io(Kroki 側の呼称は "diagramsnet")は、公開の kroki.io では
-コンパニオンサービスが停止していることがあり、その場合は下のブロックが
-エラー表示になります。self-host した Kroki(diagramsnet コンパニオン込み)
-では動作します。
+**動作しません**(一時的な障害ではなく、メンテナが「追加リソースが必要でコストが
+かかるため動かしていない」と公式に表明している既定の仕様です。
+https://github.com/yuzutech/kroki/issues/1726 参照)。下のブロックはこの
+既定 URL のままではエラー表示になります。使うには Kroki を self-host し、
+`yuzutech/kroki-diagramsnet` コンパニオンコンテナを併用してください
+(docker-compose の設定例は
+link:../docs/milestone-12-plan.md[docs/milestone-12-plan.md] に記載)。
+起動後は「設定」→「作図(リモートレンダリング)」の Kroki サーバー URL を
+その self-host 先(例: `http://localhost:8000`)に変更するだけで動きます。
 
 [drawio]
 ----

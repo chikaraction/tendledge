@@ -35,6 +35,39 @@ kroki.io に対して実リクエストで確認した(推測ではない):
   **公式に前面へ出して案内されている機能ではない**(非公式・裏メニュー的な
   位置づけ)。上記の 503(コンパニオン未起動)と合わせて、公開インスタンス
   kroki.io での draw.io サポートは実質的に非サポートに近いと判断できる。
+- **確定(2026-07-08、GitHub Issue [yuzutech/kroki#1726](https://github.com/yuzutech/kroki/issues/1726)
+  で確認)**: 上記は推測ではなく公式見解だった。メンテナ本人が「diagramsnet は
+  追加の CPU/RAM が必要でコストがかかるため kroki.io では動かしていない」と
+  明言しており(2024-03、"not planned" でクローズ)、503 は障害ではなく
+  **意図的な非提供**である。
+- **self-host すれば動く(公式ドキュメントで確認)**: diagramsnet は
+  コンパニオンコンテナ `yuzutech/kroki-diagramsnet`(Docker Hub 実在・
+  ドキュメント上は experimental 表記)として提供され、本体コンテナに
+  `KROKI_DIAGRAMSNET_HOST` / `KROKI_DIAGRAMSNET_PORT`(既定 `127.0.0.1:8005` —
+  503 のエラーメッセージと一致)を渡す構成で動作する(Issue #1726 のコメントに
+  動作報告あり、env 変数名はソースの `Diagramsnet.java` で裏取り済み)。
+  docker-compose 例:
+  ```yaml
+  services:
+    kroki:
+      image: yuzutech/kroki
+      depends_on: [diagramsnet]
+      environment:
+        - KROKI_DIAGRAMSNET_HOST=diagramsnet
+      ports:
+        - "8000:8000"
+      tmpfs:
+        - /tmp:exec
+    diagramsnet:
+      image: yuzutech/kroki-diagramsnet
+      expose:
+        - "8005"
+  ```
+  起動後、アプリの Kroki サーバー URL 設定を `http://localhost:8000` に
+  向ければ動作する見込み(このアプリ側の実装・設定画面に変更は不要 ——
+  `krokiServerUrl` は単一の URL を送るだけで、self-host かどうかは
+  サーバー側の構成の問題であり、リクエスト経路(`${server}/{type}/svg`)は
+  PlantUML と同一のため)。
 
 ## スコープ
 
