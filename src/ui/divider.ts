@@ -7,15 +7,15 @@ export function setupDivider(workspace: HTMLElement, divider: HTMLElement): void
 
     const onMove = (ev: PointerEvent) => {
       const rect = workspace.getBoundingClientRect();
-      // --editor-ratio は workspace 全体の幅に対する割合として CSS 側で使われるが、
-      // エディタペインはサイドバー分だけ右にずれた位置から始まる。分母を workspace
-      // 全体の幅のままにしないと、サイドバー表示中にドラッグ中のカーソルと区切り線の
-      // 位置が食い違う。
+      // --editor-ratio はサイドバーを除いたコンテンツ領域に対する割合(単位なし)。
+      // 分母をコンテンツ領域に揃えることで、サイドバーを開閉しても
+      // エディタ:プレビューの比率が保たれる(styles.css の --content-width と対応)。
       const sidebar = workspace.querySelector<HTMLElement>("#sidebar");
       const sidebarWidth = sidebar && !sidebar.hidden ? sidebar.getBoundingClientRect().width : 0;
       const contentLeft = rect.left + sidebarWidth;
-      const ratio = Math.min(0.8, Math.max(0.2, (ev.clientX - contentLeft) / rect.width));
-      workspace.style.setProperty("--editor-ratio", `${ratio * 100}%`);
+      const contentWidth = rect.width - sidebarWidth;
+      const ratio = Math.min(0.8, Math.max(0.2, (ev.clientX - contentLeft) / contentWidth));
+      workspace.style.setProperty("--editor-ratio", `${ratio}`);
     };
     const onUp = () => {
       divider.removeEventListener("pointermove", onMove);

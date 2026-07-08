@@ -36,7 +36,8 @@
   --hl-title: #1b5fbd;
   --hl-attr: #6d5bd0;
   --hl-meta: #6f6f7e;
-  --editor-ratio: 50%;
+  /* エディタペインの幅の割合(単位なし)。分母はサイドバーを除いたコンテンツ領域 */
+  --editor-ratio: 0.5;
   --editor-font-size: 14px;
   --preview-font-size: 16px;
   color-scheme: light dark;
@@ -353,6 +354,15 @@ body {
   display: flex;
   flex: 1;
   min-height: 0;
+  /* --editor-ratio の分母となるコンテンツ領域(サイドバーを除いた幅)。
+     サイドバーの表示中だけその幅を差し引くことで、開閉してもエディタ:プレビューの
+     比率が保たれる */
+  --sidebar-width: 220px;
+  --content-width: 100%;
+}
+
+#workspace:has(> #sidebar:not([hidden])) {
+  --content-width: calc(100% - var(--sidebar-width));
 }
 
 /* ---------------------------------------------------------------------------
@@ -360,7 +370,7 @@ body {
 --------------------------------------------------------------------------- */
 #sidebar {
   flex: none;
-  width: 220px;
+  width: var(--sidebar-width);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -483,7 +493,7 @@ body {
 }
 
 #editor-pane {
-  width: var(--editor-ratio);
+  width: calc(var(--content-width) * var(--editor-ratio));
   min-width: 0;
   display: flex;
 }
