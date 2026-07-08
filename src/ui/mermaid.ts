@@ -60,6 +60,7 @@ async function renderOne(
     // block 全体(.listingblock/.literalblock)を差し替えると、
     // ブロックタイトル(`.タイトル` 記法の `.title` div)まで消えてしまうため、
     // コード本体だけを包む .content を差し替える(タイトルは兄弟要素として残す)
+    block.classList.remove("mermaid-loading");
     const target = block.querySelector(":scope > .content") ?? block;
     target.replaceWith(figure);
   } catch (err) {
