@@ -12,6 +12,10 @@
   --fg: #26262e;
   --fg-muted: #6f6f7e;
   --border: #e1e1e8;
+  /* テーブル罫線専用。--border は UI の「目立たせたくない線」(メニュー境界・
+     ペイン区切り)に合わせて控えめなので、内容物であるテーブルの罫線は分離する。
+     ライトは共用のままで問題ないが、ダークは一段明るくしないと罫線が沈む */
+  --table-border: var(--border);
   --accent: #6d5bd0;
   --error: #b0362c;
   /* コード面(インラインコード・コードブロックの背景)。ダークでは地より
@@ -52,6 +56,7 @@
     --fg: #dcdce4;
     --fg-muted: #8d8da0;
     --border: #2c2c36;
+    --table-border: #40404e;
     --accent: #a78bfa;
     --error: #e5766c;
     --code-bg: #26262f;
@@ -73,6 +78,7 @@
   --fg: #dcdce4;
   --fg-muted: #8d8da0;
   --border: #2c2c36;
+  --table-border: #40404e;
   --accent: #a78bfa;
   --error: #e5766c;
   --code-bg: #26262f;
@@ -908,7 +914,7 @@ body {
 
 .adoc table.tableblock td,
 .adoc table.tableblock th {
-  border: 1px solid var(--border);
+  border: 1px solid var(--table-border);
   padding: 0.45rem 0.7rem;
   text-align: left;
 }
