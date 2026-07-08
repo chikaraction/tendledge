@@ -39,7 +39,9 @@ kroki.io に対して実リクエストで確認した(推測ではない):
 5. **ui/kroki.ts(新規)** — fetch(Tauri/ブラウザ両対応)・キャッシュ・`<img>` 差し替え
 6. **プレビューへの組み込み** — decorateMermaid と並ぶ非同期 decorate(世代ガード共有)
 7. **HTML エクスポートへの焼き込み**(data URI `<img>`。無効時は焼き込まない)
-8. **サンプル文書** — `sample/07-diagrams.adoc` に PlantUML / Draw.io 節を追記
+8. **サンプル文書** — `sample/08-diagrams-plantuml.adoc` / `sample/09-diagrams-drawio.adoc`
+   を新設(Mermaid の `07-diagrams.adoc` は `07-diagrams-mermaid.adoc` に改名し、
+   図の種類ごとに文書を分割)
 
 スコープ外:
 
@@ -193,7 +195,7 @@ Draw.io の SVG はラベルを `foreignObject` 内 HTML で表現する(mermaid
 - エクスポートを sanitize しない方針は維持(挿入物が data URI `<img>` なので
   新たな懸念もない)。
 
-### サンプル文書(sample/07-diagrams.adoc 追記)
+### サンプル文書(sample/08-diagrams-plantuml.adoc・09-diagrams-drawio.adoc 新設)
 
 - PlantUML: シーケンス図・クラス図あたりを 2〜3 例(`[plantuml]` と
   `[source,plantuml]` の両記法)。
@@ -233,7 +235,9 @@ src/
   render.ts               [plantuml] / [drawio] 正規化拡張(テスト追加)
   main.ts                 配線: kroki プロバイダ・エクスポート焼き込み
 src/styles.css            .kroki-diagram(ライト背景固定)+ ローディング/エラー表示
-sample/07-diagrams.adoc   PlantUML / Draw.io 節を追記
+sample/07-diagrams-mermaid.adoc   Mermaid 専用に改名(元 07-diagrams.adoc)
+sample/08-diagrams-plantuml.adoc 新規: PlantUML
+sample/09-diagrams-drawio.adoc   新規: Draw.io
 src-tauri/Cargo.toml      tauri-plugin-http
 src-tauri/src/lib.rs      プラグイン登録
 src-tauri/capabilities/default.json  http 許可 + scope(識別子は実物確認)

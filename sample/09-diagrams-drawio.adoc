@@ -1,0 +1,36 @@
+= 作図(Draw.io・Kroki 経由)
+:author: AsciiDoc Editor
+
+CAUTION: この節の図は、link:07-diagrams-mermaid.adoc[Mermaid]とは違い、
+この文書内では完結しません。図のソースを**設定した Kroki サーバーへ送信して**
+SVG を受け取る方式です。「設定」→「作図(リモートレンダリング)」でオプトイン
+(既定は無効)し、サーバー URL(既定 `kroki.io`、self-host も可)を確認してから
+使ってください。オフライン時・サーバーに到達できない場合は、コードブロックの
+下にエラーが表示されます(図には壊れません)。
+
+== 記法
+
+`[drawio]` ブロック(`[diagramsnet]` でも同じ)に draw.io の `mxfile` XML を
+そのまま書きます。
+
+WARNING: Draw.io(Kroki 側の呼称は "diagramsnet")は、公開の kroki.io では
+コンパニオンサービスが停止していることがあり、その場合は下のブロックが
+エラー表示になります。self-host した Kroki(diagramsnet コンパニオン込み)
+では動作します。
+
+[drawio]
+----
+<mxfile>
+  <diagram name="Page-1">
+    <mxGraphModel dx="800" dy="600" grid="1" gridSize="10">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="2" value="こんにちは" style="rounded=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="120" height="60" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
+----

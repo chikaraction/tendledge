@@ -1,4 +1,4 @@
-= 作図(Mermaid / PlantUML / Draw.io)
+= 作図(Mermaid)
 :author: AsciiDoc Editor
 
 Mermaid のコードから図を描けます。図はこのエディタ内で描画され(mermaid.js を
@@ -131,76 +131,6 @@ Mermaid として解釈できない内容を書くと、図には変換されず
 これは Mermaid の記法ではありません
 ----
 
-== PlantUML / Draw.io(Kroki 経由)
-
-CAUTION: この節の図は、この文書内で完結する Mermaid とは違い、図のソースを
-**設定した Kroki サーバーへ送信して** SVG を受け取る方式です。「設定」→
-「作図(リモートレンダリング)」でオプトイン(既定は無効)し、サーバー
-URL(既定 `kroki.io`、self-host も可)を確認してから使ってください。
-オフライン時・サーバーに到達できない場合は、コードブロックの下にエラーが
-表示されます(図には壊れません)。
-
-=== PlantUML
-
-`[plantuml]` ブロック、または `[source,plantuml]` ブロックに PlantUML の
-記法を書きます。どちらでも同じ図になります。
-
-.シーケンス図
-[plantuml]
-----
-Alice -> Bob: 認証要求
-Bob --> Alice: トークン発行
-Alice -> Bob: トークン提示
-Bob --> Alice: 認可完了
-----
-
-.クラス図(source,plantuml)
-[source,plantuml]
-----
-class Document {
-  +String title
-  +String path
-  +Boolean dirty
-  +save()
-}
-class Tab
-Document "1" o-- "1" Tab
-Document <|-- AsciiDocFile
-----
-
-=== Draw.io
-
-`[drawio]` ブロック(`[diagramsnet]` でも同じ)に draw.io の `mxfile` XML を
-そのまま書きます。
-
-WARNING: Draw.io(Kroki 側の呼称は "diagramsnet")は、公開の kroki.io では
-コンパニオンサービスが停止していることがあり、その場合は下のブロックが
-エラー表示になります。self-host した Kroki(diagramsnet コンパニオン込み)
-では動作します。
-
-[drawio]
-----
-<mxfile>
-  <diagram name="Page-1">
-    <mxGraphModel dx="800" dy="600" grid="1" gridSize="10">
-      <root>
-        <mxCell id="0"/>
-        <mxCell id="1" parent="0"/>
-        <mxCell id="2" value="こんにちは" style="rounded=1" vertex="1" parent="1">
-          <mxGeometry x="40" y="40" width="120" height="60" as="geometry"/>
-        </mxCell>
-      </root>
-    </mxGraphModel>
-  </diagram>
-</mxfile>
-----
-
-=== 構文エラーのとき(PlantUML)
-
-Kroki サーバーが「解釈できない」と判断した場合も、Mermaid と同じくコードは
-消えず、エラーメッセージが直下に表示されます。
-
-[plantuml]
-----
-これは PlantUML の記法ではありません
-----
+TIP: PlantUML は link:08-diagrams-plantuml.adoc[08-diagrams-plantuml.adoc]、
+Draw.io は link:09-diagrams-drawio.adoc[09-diagrams-drawio.adoc] を参照してください。
+どちらも Kroki 経由のリモートレンダリングが必要です。
