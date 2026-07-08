@@ -41,7 +41,7 @@ import {
 } from "./ui/settings-dialog";
 import { setupShortcuts } from "./ui/shortcuts";
 import { createStatusbar } from "./ui/statusbar";
-import { renderTabs } from "./ui/tabs";
+import { renderTabs, setupTabOverflow } from "./ui/tabs";
 import { createViewModeControls } from "./ui/view-mode";
 
 // ---------------------------------------------------------------------------
@@ -130,11 +130,25 @@ function syncStatusbarFromView(): void {
   statusbar.setCursor(line.number, head - line.from + 1);
 }
 
+const tabOverflow = setupTabOverflow(
+  document.getElementById("tabbar")!,
+  tabbarTabsEl,
+  () =>
+    store.list().map((d) => ({
+      id: d.id,
+      label: d.path ? basename(d.path) : "Untitled",
+      active: d.id === store.activeDoc().id,
+      dirty: store.isDirty(d.id),
+    })),
+  (id) => activateTab(id),
+);
+
 function updateTabs(): void {
   renderTabs(tabbarTabsEl, store.list(), store.activeDoc().id, store.isDirty, {
     onActivate: activateTab,
     onClose: (id) => void closeTab(id),
   });
+  tabOverflow.update();
 }
 
 /** アクティブタブの EditorState を退避してから、指定タブの状態に切り替える */

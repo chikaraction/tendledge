@@ -265,9 +265,43 @@ body {
 #tabbar-tabs {
   display: flex;
   align-items: stretch;
+  /* 溢れたときはスクロールバーを出さず、ホイール・左右ボタンで送る(ui/tabs.ts) */
   overflow-x: auto;
+  scrollbar-width: none;
   flex: 1;
   min-width: 0;
+}
+
+#tabbar-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* display: flex が UA の [hidden] { display: none } を上書きしてしまうため明示する */
+.tabbar-action[hidden],
+.tab-list-menu[hidden] {
+  display: none;
+}
+
+/* タブ溢れ時だけ現れる左右送り・一覧ボタン(タブ列と面一に置くので角丸なし) */
+.tab-scroll {
+  border-radius: 0;
+}
+
+.tab-list-menu {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.tab-list-dropdown {
+  left: auto;
+  right: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.tab-list-dropdown .menu-item.active {
+  color: var(--accent);
 }
 
 #tabbar-actions {

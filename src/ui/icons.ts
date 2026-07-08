@@ -2,6 +2,7 @@
 // 採用理由(Obsidian と同じセット・ISC ライセンス)は docs/design-direction.md 参照。
 // アイコンを増やすときはここの icons に追記する(直接 lucide を import しない)。
 import {
+  ChevronLeft,
   ChevronRight,
   CircleAlert,
   Columns2,
@@ -13,6 +14,7 @@ import {
   type IconNode,
   Info,
   Lightbulb,
+  List,
   Pencil,
   RotateCw,
   TriangleAlert,
@@ -21,6 +23,8 @@ import {
 
 export const icons = {
   chevron: ChevronRight,
+  chevronLeft: ChevronLeft,
+  list: List,
   file: FileText,
   folder: Folder,
   refresh: RotateCw,
