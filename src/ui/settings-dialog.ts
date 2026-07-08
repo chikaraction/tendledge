@@ -253,6 +253,12 @@ export function createSettingsDialog(
     "PlantUML / Draw.io ブロックを図として表示するには、ソースを下記サーバーへ送信します。";
   form.appendChild(krokiNote);
 
+  const krokiDrawioNote = document.createElement("p");
+  krokiDrawioNote.className = "settings-note";
+  krokiDrawioNote.textContent =
+    "既定の kroki.io では Draw.io は動作しません(公式に非提供)。使うには self-host した Kroki の URL を指定してください。";
+  form.appendChild(krokiDrawioNote);
+
   const krokiEnabledRow = document.createElement("label");
   krokiEnabledRow.className = "settings-row";
   const krokiEnabledSpan = document.createElement("span");
