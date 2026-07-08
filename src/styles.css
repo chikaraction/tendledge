@@ -569,7 +569,9 @@ body {
    プレビュー(Asciidoctor が生成する HTML 向け)
 --------------------------------------------------------------------------- */
 .adoc {
-  max-width: 46rem;
+  /* 本文幅は設定「プレビュー本文の幅」で変わる(main.ts が変数を設定する)。
+     変数未定義時のフォールバック 46rem が標準幅で、HTML エクスポートにもこちらが効く */
+  max-width: var(--preview-max-width, 46rem);
   margin: 0 auto;
   padding: 2rem 2.2rem 4rem;
   line-height: 1.75;

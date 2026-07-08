@@ -6,6 +6,8 @@
 
 export type Theme = "light" | "dark" | "system";
 
+export type PreviewMaxWidth = "standard" | "wide" | "full";
+
 export interface Settings {
   /** 配色テーマ */
   theme: Theme;
@@ -23,9 +25,24 @@ export interface Settings {
   krokiEnabled: boolean;
   /** Kroki サーバーの URL(self-host 対応) */
   krokiServerUrl: string;
+  /** プレビュー本文の最大幅(standard: 46rem / wide: 66rem / full: 制限なし) */
+  previewMaxWidth: PreviewMaxWidth;
 }
 
 const THEMES: readonly Theme[] = ["light", "dark", "system"];
+
+const PREVIEW_MAX_WIDTHS: readonly PreviewMaxWidth[] = ["standard", "wide", "full"];
+
+/**
+ * previewMaxWidth を CSS の --preview-max-width 値へ写像する。
+ * standard は undefined = 変数を設定しない。CSS 側の var() フォールバック(46rem)に
+ * 任せることで、この変数を持たない HTML エクスポートも標準幅に固定される。
+ */
+export const PREVIEW_MAX_WIDTH_CSS: Record<PreviewMaxWidth, string | undefined> = {
+  standard: undefined,
+  wide: "66rem",
+  full: "none",
+};
 
 const FONT_SIZE_MIN = 9;
 const FONT_SIZE_MAX = 72;
@@ -44,10 +61,15 @@ export const DEFAULT_SETTINGS: Settings = {
   previewDebounceMs: 300,
   krokiEnabled: false,
   krokiServerUrl: "https://kroki.io",
+  previewMaxWidth: "standard",
 };
 
 function isTheme(value: unknown): value is Theme {
   return typeof value === "string" && (THEMES as readonly string[]).includes(value);
+}
+
+function isPreviewMaxWidth(value: unknown): value is PreviewMaxWidth {
+  return typeof value === "string" && (PREVIEW_MAX_WIDTHS as readonly string[]).includes(value);
 }
 
 function isNumberInRange(value: unknown, min: number, max: number): value is number {
@@ -105,5 +127,8 @@ export function mergeSettings(saved: unknown): Settings {
         ? candidate.krokiEnabled
         : DEFAULT_SETTINGS.krokiEnabled,
     krokiServerUrl: mergeServerUrl(candidate.krokiServerUrl, DEFAULT_SETTINGS.krokiServerUrl),
+    previewMaxWidth: isPreviewMaxWidth(candidate.previewMaxWidth)
+      ? candidate.previewMaxWidth
+      : DEFAULT_SETTINGS.previewMaxWidth,
   };
 }

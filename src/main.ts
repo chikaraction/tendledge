@@ -9,7 +9,12 @@ import { type MermaidTheme, resolveMermaidTheme } from "./core/diagram";
 import { createDocumentStore } from "./core/documents";
 import { basename, joinPath, suggestedExportName } from "./core/paths";
 import { resolveImagePath } from "./core/preview-links";
-import { DEFAULT_SETTINGS, type Settings, type Theme } from "./core/settings";
+import {
+  DEFAULT_SETTINGS,
+  PREVIEW_MAX_WIDTH_CSS,
+  type Settings,
+  type Theme,
+} from "./core/settings";
 import {
   createViewModeState,
   setMode,
@@ -391,6 +396,13 @@ function applySettings(settings: Settings): void {
     );
   } else {
     document.documentElement.style.removeProperty("--preview-font-family");
+  }
+  // プレビュー本文の最大幅。standard は変数ごと外して CSS 側のフォールバック(46rem)に任せる
+  const previewMaxWidth = PREVIEW_MAX_WIDTH_CSS[settings.previewMaxWidth];
+  if (previewMaxWidth) {
+    document.documentElement.style.setProperty("--preview-max-width", previewMaxWidth);
+  } else {
+    document.documentElement.style.removeProperty("--preview-max-width");
   }
   preview.setDebounceMs(settings.previewDebounceMs);
   rerenderPreviewIfMermaidThemeChanged();
