@@ -87,6 +87,21 @@ export function createEditor(opts: {
     parent: opts.parent,
   });
 
+  // 行番号ガターの実測幅を --editor-gutter-width へ反映する。
+  // ガター幅は行数の桁数・フォントサイズ設定で変動するため静的に決め打ちできない
+  // (styles.css 側でサイドバー比率の計算に使う)。
+  const gutters = view.dom.querySelector<HTMLElement>(".cm-gutters");
+  if (gutters) {
+    const applyGutterWidth = () => {
+      document.documentElement.style.setProperty(
+        "--editor-gutter-width",
+        `${gutters.getBoundingClientRect().width}px`,
+      );
+    };
+    applyGutterWidth();
+    new ResizeObserver(applyGutterWidth).observe(gutters);
+  }
+
   return { view, newState };
 }
 

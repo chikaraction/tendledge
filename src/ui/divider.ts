@@ -14,7 +14,17 @@ export function setupDivider(workspace: HTMLElement, divider: HTMLElement): void
       const sidebarWidth = sidebar && !sidebar.hidden ? sidebar.getBoundingClientRect().width : 0;
       const contentLeft = rect.left + sidebarWidth;
       const contentWidth = rect.width - sidebarWidth;
-      const ratio = Math.min(0.8, Math.max(0.2, (ev.clientX - contentLeft) / contentWidth));
+      // styles.css 側は width = (contentWidth - gutterWidth) * ratio + gutterWidth で
+      // #editor-pane 幅を決めているため、ドラッグ計算も同じ式を逆算する
+      // (ガター幅を除いた本文領域だけで比率を取ることで、50% でプレビューと同幅になる)。
+      const gutterWidth = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue("--editor-gutter-width"),
+      );
+      const editorPaneWidth = ev.clientX - contentLeft;
+      const ratio = Math.min(
+        0.8,
+        Math.max(0.2, (editorPaneWidth - gutterWidth) / (contentWidth - gutterWidth)),
+      );
       workspace.style.setProperty("--editor-ratio", `${ratio}`);
     };
     const onUp = () => {

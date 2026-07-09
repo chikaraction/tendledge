@@ -42,6 +42,10 @@
   --hl-meta: #6f6f7e;
   /* エディタペインの幅の割合(単位なし)。分母はサイドバーを除いたコンテンツ領域 */
   --editor-ratio: 0.5;
+  /* CodeMirror の行番号ガター幅(ui/editor.ts が実測して反映)。
+     ガター分を比率計算から除くことで、50% 設定時にエディタの「本文」領域が
+     プレビューと同じ幅になる(ガターはどちらのペインにもない飾りなので) */
+  --editor-gutter-width: 0px;
   --editor-font-size: 14px;
   --preview-font-size: 16px;
   color-scheme: light dark;
@@ -547,7 +551,12 @@ body {
 }
 
 #editor-pane {
-  width: calc(var(--content-width) * var(--editor-ratio));
+  /* 本文領域(ガター除く)が (コンテンツ幅 − ガター幅) × ratio になるよう、
+     ガター幅を先に引いてから比率を掛け、最後に戻す */
+  width: calc(
+    (var(--content-width) - var(--editor-gutter-width)) * var(--editor-ratio) +
+      var(--editor-gutter-width)
+  );
   min-width: 0;
   display: flex;
 }
