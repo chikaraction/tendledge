@@ -9,6 +9,10 @@
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
     "fs:allow-read-dir",
+    {
+      "identifier": "fs:scope",
+      "allow": ["**"]
+    },
     "dialog:default",
     "store:default",
     "window-state:default",
