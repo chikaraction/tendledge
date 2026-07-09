@@ -170,6 +170,12 @@ function switchEditorTo(id: number, previousId?: number): void {
   const doc = store.list().find((d) => d.id === id)!;
   const state = editorStates.get(id) ?? editor.newState(doc.content);
   view.setState(state);
+  // view.focus() は CodeMirror 内部に「フォーカス時に scrollTop が 0 なら
+  // 直前の scrollTop(inputState.lastScrollTop)へ戻す」処理を持つ
+  // (@codemirror/view の observers.focus)。inputState は setState をまたいで
+  // 保持されるので、focus をこの後(scrollTop 確定後)に呼ぶと、古いタブの
+  // 位置へ巻き戻されてしまう。先に focus してから scrollTop を確定させる。
+  view.focus();
   const scroll = tabScrollTops.get(id);
   view.scrollDOM.scrollTop = scroll?.editor ?? 0;
   // プレビューは描画完了で内容が入れ替わってから位置を戻す(未退避のタブは先頭)。
@@ -181,7 +187,6 @@ function switchEditorTo(id: number, previousId?: number): void {
   syncStatusbarFromView();
   updateTabs();
   fileTree.setActivePath(doc.path);
-  view.focus();
 }
 
 function activateTab(id: number): void {
