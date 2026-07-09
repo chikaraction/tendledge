@@ -75,7 +75,7 @@ Vite のみのブラウザプレビューでは Tauri API(fs / dialog / store)�
 - [ ] Ctrl+P → 印刷プレビューのコードブロックがダークテーマ中でもライト配色になっている
 
 ### 作図 / Mermaid(M11)
-- [ ] sample の 07-diagrams-mermaid.adoc を開き、フローチャート・シーケンス図・
+- [ ] sample/diagrams の 07-diagrams-mermaid.adoc を開き、フローチャート・シーケンス図・
       状態遷移図が図として描画される(構文エラーの例はコードとエラー表示のまま残る)
 - [ ] ダークテーマ状態で 07 を HTML エクスポート → 生成 HTML を
       *ネットワークを切った状態* のブラウザで開き、図がライト配色の SVG で表示される

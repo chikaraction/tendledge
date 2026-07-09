@@ -20,7 +20,7 @@ https://github.com/yuzutech/kroki/issues/1726 参照)。下のブロックはこ
 既定 URL のままではエラー表示になります。使うには Kroki を self-host し、
 `yuzutech/kroki-diagramsnet` コンパニオンコンテナを併用してください
 (docker-compose の設定例は
-link:../docs/milestone-12-plan.md[docs/milestone-12-plan.md] に記載)。
+link:../../docs/milestone-12-plan.md[docs/milestone-12-plan.md] に記載)。
 起動後は「設定」→「作図(リモートレンダリング)」の Kroki サーバー URL を
 その self-host 先(例: `http://localhost:8000`)に変更するだけで動きます。
 
