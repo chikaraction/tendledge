@@ -1242,3 +1242,54 @@ body {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* ---------------------------------------------------------------------------
+   検索パネル(@codemirror/search、basicSetup 同梱)。
+   既定は素の英語 UI なので、設定ダイアログのフォーム部品と揃えた見た目にする。
+   Ctrl+F はエディタ表示中なら常にこのパネルを開く(ui/shortcuts.ts + main.ts)。
+--------------------------------------------------------------------------- */
+.cm-panel.cm-search {
+  padding: 0.4rem 1.6rem 0.5rem 0.5rem;
+  background: var(--bg-subtle);
+  color: var(--fg);
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+}
+
+.cm-panel.cm-search .cm-textfield {
+  font: inherit;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.cm-panel.cm-search .cm-button {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-subtle);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.cm-panel.cm-search .cm-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.cm-panel.cm-search label {
+  color: var(--fg-muted);
+}
+
+.cm-panel.cm-search [name="close"] {
+  color: var(--fg-muted);
+  font-size: 1rem;
+}
+
+.cm-panel.cm-search [name="close"]:hover {
+  color: var(--fg);
+}

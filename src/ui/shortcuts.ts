@@ -13,6 +13,12 @@ export interface ShortcutHandlers {
   onToggleSplit: () => void;
   /** 「プレビューとして開く」(Ctrl+Shift+V) */
   onTogglePreview: () => void;
+  /**
+   * Ctrl+F。true を返すとここで preventDefault してブラウザ/WebView のネイティブ検索を
+   * 抑止する(呼び出し側でエディタの検索パネルを開いた場合)。false ならネイティブ検索に任せる
+   * (プレビューのみ表示中など)。
+   */
+  onFind: () => boolean;
 }
 
 // Ctrl+K の後に次のキーを待つ猶予(ms)。この間に V が来なければコードを解除する。
@@ -74,6 +80,10 @@ export function setupShortcuts(handlers: ShortcutHandlers): void {
     } else if (key === "v" && e.shiftKey) {
       e.preventDefault();
       handlers.onTogglePreview();
+    } else if (key === "f") {
+      if (handlers.onFind()) {
+        e.preventDefault();
+      }
     }
   });
 }

@@ -3,11 +3,33 @@
 // (EditorState をタブごとに保持すれば undo 履歴やカーソル位置もタブごとに保たれる)。
 import { indentWithTab } from "@codemirror/commands";
 import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
+import { openSearchPanel } from "@codemirror/search";
 import { EditorState, type Extension } from "@codemirror/state";
 import { keymap } from "@codemirror/view";
 import { basicSetup, EditorView } from "codemirror";
 import { tags } from "@lezer/highlight";
 import { asciidocMode } from "../asciidoc-mode";
+
+// @codemirror/search の検索パネル文言を日本語化する(公式の翻訳機構 EditorState.phrases)。
+// キーは @codemirror/search のソース(SearchPanel クラス)が phrase() 呼び出しに
+// 渡している原文そのまま。basicSetup の searchKeymap がすでに Mod-f を
+// openSearchPanel に割り当てているため、拡張の追加は不要
+// (コマンド自身が未登録なら検索用の状態を遅延登録する)。
+const searchPhrases = EditorState.phrases.of({
+  Find: "検索",
+  Replace: "置換後の文字列",
+  next: "次へ",
+  previous: "前へ",
+  all: "すべて選択",
+  "match case": "大文字小文字を区別",
+  regexp: "正規表現",
+  "by word": "単語単位",
+  replace: "置換",
+  "replace all": "すべて置換",
+  close: "閉じる",
+  "current match": "現在の一致",
+  "on line": "行:",
+});
 
 // basicSetup 既定の defaultHighlightStyle は見出し(tags.heading)に下線を付ける。
 // AsciiDoc の "=" 見出し行に下線は不要なので、太字だけの非フォールバック
@@ -34,6 +56,7 @@ export function createEditor(opts: {
     keymap.of([indentWithTab]),
     StreamLanguage.define(asciidocMode),
     headingHighlight,
+    searchPhrases,
     EditorView.lineWrapping,
     // CodeMirror の既定テーマは常に light 配色なので、Slate のデザイントークン
     // (CSS 変数)で上書きする。ダークテーマ時に行番号ガター等が白いままになるのを防ぐ。
@@ -117,6 +140,12 @@ export function editorTopLine(view: EditorView): number {
   const rect = view.scrollDOM.getBoundingClientRect();
   const pos = view.posAtCoords({ x: rect.left + 4, y: rect.top + 4 }) ?? 0;
   return view.state.doc.lineAt(pos).number;
+}
+
+/** エディタへフォーカスして検索パネルを開く(プレビュー側にフォーカスがあっても呼べる) */
+export function openEditorSearch(view: EditorView): void {
+  view.focus();
+  openSearchPanel(view);
 }
 
 /** 指定行がエディタ表示領域の先頭に来るようスクロールする */

@@ -25,7 +25,7 @@ import {
 import { buildVaultTree, countFiles, type RawEntry } from "./core/vault-tree";
 import { sampleDoc } from "./sample-doc";
 import { setupDivider } from "./ui/divider";
-import { createEditor, editorScrollToLine, editorTopLine } from "./ui/editor";
+import { createEditor, editorScrollToLine, editorTopLine, openEditorSearch } from "./ui/editor";
 import { createFileTree } from "./ui/file-tree";
 import { buildExportHtml } from "./ui/html-export";
 import { icon, icons } from "./ui/icons";
@@ -585,4 +585,11 @@ setupShortcuts({
   },
   onToggleSplit: () => applyViewMode(toggleSplit(viewModeState)),
   onTogglePreview: () => applyViewMode(togglePreview(viewModeState)),
+  onFind: () => {
+    // プレビューのみ表示中はエディタが非表示なので、ネイティブ検索バーに任せる。
+    // それ以外(エディタ表示中)はプレビューにフォーカスがあっても検索パネルを開く。
+    if (viewModeState.mode === "preview") return false;
+    openEditorSearch(view);
+    return true;
+  },
 });
