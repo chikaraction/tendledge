@@ -219,7 +219,10 @@ async function closeTab(id: number): Promise<void> {
 let vaultPath: string | undefined;
 
 const fileTree = createFileTree(document.getElementById("file-tree")!, (path) => {
-  void openFileInTab(path);
+  openFileInTab(path).catch((err) => {
+    console.error("ファイルを開けませんでした:", path, err);
+    window.alert(`ファイルを開けませんでした:\n${path}\n\n${err}`);
+  });
 });
 
 /** readDir を再帰的に呼んでツリーの素材を集める(ドット始まりのフォルダには潜らない) */
