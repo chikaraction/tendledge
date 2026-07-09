@@ -154,6 +154,12 @@ function updateTabs(): void {
 
 /** アクティブタブの EditorState を退避してから、指定タブの状態に切り替える */
 function switchEditorTo(id: number, previousId?: number): void {
+  // 切替の間はスクロール同期を止める。setState でエディタの内容量が変わると
+  // ブラウザが scrollTop を新しい範囲へ自動クランプすることがあり、その瞬間に
+  // 同期リスナーが発火すると「プレビューはまだ前のタブの見出しアンカーのまま」
+  // という食い違った状態で計算してしまい、誤った位置に飛んでしまう
+  // (しかもその後の正しい修正が二重発火防止ガードでブロックされて残ってしまう)。
+  const resumeScrollSync = scrollSync.suspend();
   if (previousId !== undefined && previousId !== id) {
     editorStates.set(previousId, view.state);
     tabScrollTops.set(previousId, {
@@ -166,9 +172,11 @@ function switchEditorTo(id: number, previousId?: number): void {
   view.setState(state);
   const scroll = tabScrollTops.get(id);
   view.scrollDOM.scrollTop = scroll?.editor ?? 0;
-  // プレビューは描画完了で内容が入れ替わってから位置を戻す(未退避のタブは先頭)
+  // プレビューは描画完了で内容が入れ替わってから位置を戻す(未退避のタブは先頭)。
+  // 両ペインの位置が確定してから同期を再開する。
   void preview.render(view.state.doc.toString()).then(() => {
     preview.paneEl.scrollTop = scroll?.preview ?? 0;
+    resumeScrollSync();
   });
   syncStatusbarFromView();
   updateTabs();
@@ -254,7 +262,7 @@ updateTabs();
 view.focus();
 
 setupDivider(document.getElementById("workspace")!, document.getElementById("divider")!);
-setupScrollSync(view, preview);
+const scrollSync = setupScrollSync(view, preview);
 
 // ---------------------------------------------------------------------------
 // 表示モード(エディタのみ / 分割 / プレビューのみ。ウィンドウ単位で1つ)

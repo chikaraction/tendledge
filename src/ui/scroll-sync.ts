@@ -3,12 +3,23 @@ import type { EditorView } from "codemirror";
 import { editorScrollToLine, editorTopLine } from "./editor";
 import type { PreviewController } from "./preview";
 
-export function setupScrollSync(view: EditorView, preview: PreviewController): void {
+export interface ScrollSyncController {
+  /**
+   * 同期を一時停止し、再開関数を返す。タブ切替の間はこれで停止しておく。
+   * 切替中は setState でエディタの内容が変わる一方、プレビューはまだ古いタブの
+   * アンカーのまま(re-render が非同期で後から追いつく)なので、その間に
+   * スクロールイベントが飛ぶと片方の内容量でもう片方を誤った位置へ動かしてしまう。
+   */
+  suspend(): () => void;
+}
+
+export function setupScrollSync(view: EditorView, preview: PreviewController): ScrollSyncController {
   let syncingScroll = false;
+  let suspended = false;
 
   // 2つのスクロールリスナーが互いを再帰的に呼び合わないためのガード。
   function withScrollGuard(fn: () => void): void {
-    if (syncingScroll) return;
+    if (syncingScroll || suspended) return;
     syncingScroll = true;
     fn();
     const release = () => {
@@ -33,4 +44,13 @@ export function setupScrollSync(view: EditorView, preview: PreviewController): v
       editorScrollToLine(view, lineno);
     });
   });
+
+  return {
+    suspend() {
+      suspended = true;
+      return () => {
+        suspended = false;
+      };
+    },
+  };
 }
