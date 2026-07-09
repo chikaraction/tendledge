@@ -22,7 +22,7 @@ import {
   toggleSplit,
   type ViewModeState,
 } from "./core/view-mode";
-import { buildVaultTree, type RawEntry } from "./core/vault-tree";
+import { buildVaultTree, countFiles, type RawEntry } from "./core/vault-tree";
 import { sampleDoc } from "./sample-doc";
 import { setupDivider } from "./ui/divider";
 import { createEditor, editorScrollToLine, editorTopLine } from "./ui/editor";
@@ -53,6 +53,7 @@ const tabbarTabsEl = document.getElementById("tabbar-tabs")!;
 const tabbarActionsEl = document.getElementById("tabbar-actions")!;
 const sidebarEl = document.getElementById("sidebar")!;
 const vaultNameEl = document.getElementById("vault-name")!;
+const vaultFileCountEl = document.getElementById("vault-file-count")!;
 
 const statusbar = createStatusbar(document.getElementById("statusbar")!);
 
@@ -228,16 +229,19 @@ async function walkDir(path: string): Promise<RawEntry[]> {
 async function refreshVault(): Promise<void> {
   if (!vaultPath) return;
   const entries = await walkDir(vaultPath);
-  fileTree.setTree(buildVaultTree(vaultPath, entries));
+  const tree = buildVaultTree(vaultPath, entries);
+  fileTree.setTree(tree);
   fileTree.setActivePath(store.activeDoc().path);
   vaultNameEl.textContent = basename(vaultPath);
   vaultNameEl.title = vaultPath;
+  const fileCount = countFiles(tree);
+  vaultFileCountEl.textContent = `${fileCount} ファイル`;
   statusbar.setVaultName(basename(vaultPath));
   sidebarEl.hidden = false;
 }
 
 async function doOpenFolder(): Promise<void> {
-  const path = await open({ directory: true });
+  const path = await open({ directory: true, title: "保管庫にするフォルダを選択" });
   if (!path || Array.isArray(path)) return;
   vaultPath = path;
   await refreshVault();

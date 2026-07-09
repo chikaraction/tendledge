@@ -440,6 +440,20 @@ body {
   white-space: nowrap;
 }
 
+#vault-file-count {
+  flex: none;
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+
+.tree-empty {
+  padding: 0.6rem 0.4rem;
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  line-height: 1.6;
+}
+
 #btn-vault-refresh {
   display: flex;
   align-items: center;
