@@ -1,6 +1,6 @@
 // サイドバーのファイルツリー表示。
 // ツリーの構築ロジックは core/vault-tree.ts、ここは DOM 描画と展開状態の管理だけ。
-import type { VaultNode } from "../core/vault-tree";
+import { SUPPORTED_EXTENSIONS, type VaultNode } from "../core/vault-tree";
 import { icon, icons } from "./icons";
 
 export interface FileTreeController {
@@ -62,6 +62,13 @@ export function createFileTree(
   }
 
   function render(): void {
+    if (tree.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "tree-empty";
+      empty.textContent = `対応ファイル(${SUPPORTED_EXTENSIONS.map((ext) => `.${ext}`).join(" / ")})が見つかりません`;
+      container.replaceChildren(empty);
+      return;
+    }
     container.replaceChildren(...tree.map(renderNode));
   }
 

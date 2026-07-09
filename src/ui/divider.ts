@@ -7,15 +7,25 @@ export function setupDivider(workspace: HTMLElement, divider: HTMLElement): void
 
     const onMove = (ev: PointerEvent) => {
       const rect = workspace.getBoundingClientRect();
-      // --editor-ratio は workspace 全体の幅に対する割合として CSS 側で使われるが、
-      // エディタペインはサイドバー分だけ右にずれた位置から始まる。分母を workspace
-      // 全体の幅のままにしないと、サイドバー表示中にドラッグ中のカーソルと区切り線の
-      // 位置が食い違う。
+      // --editor-ratio はサイドバーを除いたコンテンツ領域に対する割合(単位なし)。
+      // 分母をコンテンツ領域に揃えることで、サイドバーを開閉しても
+      // エディタ:プレビューの比率が保たれる(styles.css の --content-width と対応)。
       const sidebar = workspace.querySelector<HTMLElement>("#sidebar");
       const sidebarWidth = sidebar && !sidebar.hidden ? sidebar.getBoundingClientRect().width : 0;
       const contentLeft = rect.left + sidebarWidth;
-      const ratio = Math.min(0.8, Math.max(0.2, (ev.clientX - contentLeft) / rect.width));
-      workspace.style.setProperty("--editor-ratio", `${ratio * 100}%`);
+      const contentWidth = rect.width - sidebarWidth;
+      // styles.css 側は width = (contentWidth - gutterWidth) * ratio + gutterWidth で
+      // #editor-pane 幅を決めているため、ドラッグ計算も同じ式を逆算する
+      // (ガター幅を除いた本文領域だけで比率を取ることで、50% でプレビューと同幅になる)。
+      const gutterWidth = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue("--editor-gutter-width"),
+      );
+      const editorPaneWidth = ev.clientX - contentLeft;
+      const ratio = Math.min(
+        0.8,
+        Math.max(0.2, (editorPaneWidth - gutterWidth) / (contentWidth - gutterWidth)),
+      );
+      workspace.style.setProperty("--editor-ratio", `${ratio}`);
     };
     const onUp = () => {
       divider.removeEventListener("pointermove", onMove);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildVaultTree, isSupportedFile, type RawEntry } from "./vault-tree";
+import { buildVaultTree, countFiles, isSupportedFile, type RawEntry } from "./vault-tree";
 
 // readDir の結果(名前 + 種別 + 子)からサイドバーに表示するツリーを作る。
 // 対応拡張子のファイルだけを表示し、空になるフォルダは隠す。
@@ -99,5 +99,38 @@ describe("buildVaultTree: readDir 結果 → 表示ツリー", () => {
     const entries: RawEntry[] = [{ name: "a.adoc", isDirectory: false }];
     const tree = buildVaultTree("/home/user/vault", entries);
     expect(tree[0].path).toBe("/home/user/vault/a.adoc");
+  });
+});
+
+describe("countFiles: ツリー内の対応ファイル総数を数える(フォルダは数えない)", () => {
+  it("空のツリーは 0", () => {
+    expect(countFiles([])).toBe(0);
+  });
+
+  it("フラットなツリーはファイルの個数をそのまま返す", () => {
+    const tree = buildVaultTree("C:\\vault", [
+      { name: "a.adoc", isDirectory: false },
+      { name: "b.adoc", isDirectory: false },
+    ]);
+    expect(countFiles(tree)).toBe(2);
+  });
+
+  it("ネストしたフォルダの中のファイルも合算する(フォルダ自体は数えない)", () => {
+    const tree = buildVaultTree("C:\\vault", [
+      { name: "a.adoc", isDirectory: false },
+      {
+        name: "notes",
+        isDirectory: true,
+        children: [
+          { name: "b.adoc", isDirectory: false },
+          {
+            name: "deep",
+            isDirectory: true,
+            children: [{ name: "c.adoc", isDirectory: false }],
+          },
+        ],
+      },
+    ]);
+    expect(countFiles(tree)).toBe(3);
   });
 });

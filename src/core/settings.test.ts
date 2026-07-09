@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SETTINGS, mergeSettings } from "./settings";
+import { DEFAULT_SETTINGS, mergeSettings, PREVIEW_MAX_WIDTH_CSS } from "./settings";
 
 describe("DEFAULT_SETTINGS: 既定値", () => {
-  it("テーマは system、フォントサイズは 14px、プレビューは 16px、フォントファミリは空(既定)、デバウンスは 300ms、Kroki は無効・既定サーバーは kroki.io", () => {
+  it("テーマは system、フォントサイズは 14px、プレビューは 16px、フォントファミリは空(既定)、デバウンスは 300ms、Kroki は無効・既定サーバーは kroki.io、プレビュー本文幅は standard", () => {
     expect(DEFAULT_SETTINGS).toEqual({
       theme: "system",
       editorFontSize: 14,
@@ -12,6 +12,7 @@ describe("DEFAULT_SETTINGS: 既定値", () => {
       previewDebounceMs: 300,
       krokiEnabled: false,
       krokiServerUrl: "https://kroki.io",
+      previewMaxWidth: "standard",
     });
   });
 });
@@ -28,6 +29,7 @@ describe("mergeSettings: 保存値を検証してデフォルトにフォール�
         previewDebounceMs: 500,
         krokiEnabled: true,
         krokiServerUrl: "http://localhost:8000",
+        previewMaxWidth: "wide",
       }),
     ).toEqual({
       theme: "dark",
@@ -38,6 +40,7 @@ describe("mergeSettings: 保存値を検証してデフォルトにフォール�
       previewDebounceMs: 500,
       krokiEnabled: true,
       krokiServerUrl: "http://localhost:8000",
+      previewMaxWidth: "wide",
     });
   });
 
@@ -71,6 +74,7 @@ describe("mergeSettings: 保存値を検証してデフォルトにフォール�
       previewDebounceMs: 300,
       krokiEnabled: false,
       krokiServerUrl: "https://kroki.io",
+      previewMaxWidth: "standard",
     });
   });
 
@@ -151,6 +155,7 @@ describe("mergeSettings: 保存値を検証してデフォルトにフォール�
       previewDebounceMs: 300,
       krokiEnabled: false,
       krokiServerUrl: "https://kroki.io",
+      previewMaxWidth: "standard",
     });
   });
 
@@ -219,5 +224,30 @@ describe("mergeSettings: 保存値を検証してデフォルトにフォール�
 
   it("krokiServerUrl が空文字列の場合はデフォルトにフォールバックする", () => {
     expect(mergeSettings({ krokiServerUrl: "" }).krokiServerUrl).toBe("https://kroki.io");
+  });
+
+  it("previewMaxWidth は standard / wide / full を採用する", () => {
+    expect(mergeSettings({ previewMaxWidth: "standard" }).previewMaxWidth).toBe("standard");
+    expect(mergeSettings({ previewMaxWidth: "wide" }).previewMaxWidth).toBe("wide");
+    expect(mergeSettings({ previewMaxWidth: "full" }).previewMaxWidth).toBe("full");
+  });
+
+  it("未知の previewMaxWidth 値はデフォルトの standard にフォールバックする", () => {
+    expect(mergeSettings({ previewMaxWidth: "narrow" }).previewMaxWidth).toBe("standard");
+  });
+
+  it("previewMaxWidth が文字列でない場合はデフォルトにフォールバックする", () => {
+    expect(mergeSettings({ previewMaxWidth: 46 }).previewMaxWidth).toBe("standard");
+  });
+});
+
+describe("PREVIEW_MAX_WIDTH_CSS: プレビュー本文幅の CSS 値", () => {
+  it("standard は undefined(CSS 側のフォールバック 46rem に任せる)", () => {
+    expect(PREVIEW_MAX_WIDTH_CSS.standard).toBeUndefined();
+  });
+
+  it("wide は 66rem、full は none(制限なし)", () => {
+    expect(PREVIEW_MAX_WIDTH_CSS.wide).toBe("66rem");
+    expect(PREVIEW_MAX_WIDTH_CSS.full).toBe("none");
   });
 });

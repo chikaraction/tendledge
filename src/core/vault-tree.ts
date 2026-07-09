@@ -18,7 +18,7 @@ export interface VaultNode {
   children?: VaultNode[];
 }
 
-const SUPPORTED_EXTENSIONS = ["adoc", "asciidoc", "asc", "txt"];
+export const SUPPORTED_EXTENSIONS = ["adoc", "asciidoc", "asc", "txt"];
 
 /** エディタで開ける拡張子か(大文字小文字は区別しない) */
 export function isSupportedFile(name: string): boolean {
@@ -60,4 +60,12 @@ export function buildVaultTree(rootPath: string, entries: RawEntry[]): VaultNode
   }
 
   return buildAll(rootPath, entries);
+}
+
+/** ツリー内の対応ファイルの総数を数える(フォルダ自体は数えない) */
+export function countFiles(tree: VaultNode[]): number {
+  return tree.reduce(
+    (sum, node) => sum + (node.kind === "file" ? 1 : countFiles(node.children ?? [])),
+    0,
+  );
 }

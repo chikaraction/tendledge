@@ -9,7 +9,12 @@ import { type MermaidTheme, resolveMermaidTheme } from "./core/diagram";
 import { createDocumentStore } from "./core/documents";
 import { basename, joinPath, suggestedExportName } from "./core/paths";
 import { resolveImagePath } from "./core/preview-links";
-import { DEFAULT_SETTINGS, type Settings, type Theme } from "./core/settings";
+import {
+  DEFAULT_SETTINGS,
+  PREVIEW_MAX_WIDTH_CSS,
+  type Settings,
+  type Theme,
+} from "./core/settings";
 import {
   createViewModeState,
   setMode,
@@ -17,10 +22,10 @@ import {
   toggleSplit,
   type ViewModeState,
 } from "./core/view-mode";
-import { buildVaultTree, type RawEntry } from "./core/vault-tree";
+import { buildVaultTree, countFiles, type RawEntry } from "./core/vault-tree";
 import { sampleDoc } from "./sample-doc";
 import { setupDivider } from "./ui/divider";
-import { createEditor, editorScrollToLine, editorTopLine } from "./ui/editor";
+import { createEditor, editorScrollToLine, editorTopLine, openEditorSearch } from "./ui/editor";
 import { createFileTree } from "./ui/file-tree";
 import { buildExportHtml } from "./ui/html-export";
 import { icon, icons } from "./ui/icons";
@@ -36,7 +41,7 @@ import {
 } from "./ui/settings-dialog";
 import { setupShortcuts } from "./ui/shortcuts";
 import { createStatusbar } from "./ui/statusbar";
-import { renderTabs } from "./ui/tabs";
+import { renderTabs, setupTabOverflow } from "./ui/tabs";
 import { createViewModeControls } from "./ui/view-mode";
 
 // ---------------------------------------------------------------------------
@@ -48,6 +53,7 @@ const tabbarTabsEl = document.getElementById("tabbar-tabs")!;
 const tabbarActionsEl = document.getElementById("tabbar-actions")!;
 const sidebarEl = document.getElementById("sidebar")!;
 const vaultNameEl = document.getElementById("vault-name")!;
+const vaultFileCountEl = document.getElementById("vault-file-count")!;
 
 const statusbar = createStatusbar(document.getElementById("statusbar")!);
 
@@ -72,6 +78,10 @@ const store = createDocumentStore({ initialContent: sampleDoc });
 
 // タブごとの EditorState(undo 履歴・カーソル位置を保持)。キーはドキュメント ID。
 const editorStates = new Map<number, EditorState>();
+
+// タブごとのスクロール位置。EditorState はスクロール位置を含まないため、
+// setState だけだと前のタブの scrollTop が新しいタブに引き継がれてしまう。
+const tabScrollTops = new Map<number, { editor: number; preview: number }>();
 
 const preview = createPreview({
   previewEl,
@@ -121,26 +131,62 @@ function syncStatusbarFromView(): void {
   statusbar.setCursor(line.number, head - line.from + 1);
 }
 
+const tabOverflow = setupTabOverflow(
+  document.getElementById("tabbar")!,
+  tabbarTabsEl,
+  () =>
+    store.list().map((d) => ({
+      id: d.id,
+      label: d.path ? basename(d.path) : "Untitled",
+      active: d.id === store.activeDoc().id,
+      dirty: store.isDirty(d.id),
+    })),
+  (id) => activateTab(id),
+);
+
 function updateTabs(): void {
   renderTabs(tabbarTabsEl, store.list(), store.activeDoc().id, store.isDirty, {
     onActivate: activateTab,
     onClose: (id) => void closeTab(id),
   });
+  tabOverflow.update();
 }
 
 /** アクティブタブの EditorState を退避してから、指定タブの状態に切り替える */
 function switchEditorTo(id: number, previousId?: number): void {
+  // 切替の間はスクロール同期を止める。setState でエディタの内容量が変わると
+  // ブラウザが scrollTop を新しい範囲へ自動クランプすることがあり、その瞬間に
+  // 同期リスナーが発火すると「プレビューはまだ前のタブの見出しアンカーのまま」
+  // という食い違った状態で計算してしまい、誤った位置に飛んでしまう
+  // (しかもその後の正しい修正が二重発火防止ガードでブロックされて残ってしまう)。
+  const resumeScrollSync = scrollSync.suspend();
   if (previousId !== undefined && previousId !== id) {
     editorStates.set(previousId, view.state);
+    tabScrollTops.set(previousId, {
+      editor: view.scrollDOM.scrollTop,
+      preview: preview.paneEl.scrollTop,
+    });
   }
   const doc = store.list().find((d) => d.id === id)!;
   const state = editorStates.get(id) ?? editor.newState(doc.content);
   view.setState(state);
-  void preview.render(view.state.doc.toString());
+  // view.focus() は CodeMirror 内部に「フォーカス時に scrollTop が 0 なら
+  // 直前の scrollTop(inputState.lastScrollTop)へ戻す」処理を持つ
+  // (@codemirror/view の observers.focus)。inputState は setState をまたいで
+  // 保持されるので、focus をこの後(scrollTop 確定後)に呼ぶと、古いタブの
+  // 位置へ巻き戻されてしまう。先に focus してから scrollTop を確定させる。
+  view.focus();
+  const scroll = tabScrollTops.get(id);
+  view.scrollDOM.scrollTop = scroll?.editor ?? 0;
+  // プレビューは描画完了で内容が入れ替わってから位置を戻す(未退避のタブは先頭)。
+  // 両ペインの位置が確定してから同期を再開する。
+  void preview.render(view.state.doc.toString()).then(() => {
+    preview.paneEl.scrollTop = scroll?.preview ?? 0;
+    resumeScrollSync();
+  });
   syncStatusbarFromView();
   updateTabs();
   fileTree.setActivePath(doc.path);
-  view.focus();
 }
 
 function activateTab(id: number): void {
@@ -157,6 +203,7 @@ async function closeTab(id: number): Promise<void> {
   }
   const previousId = store.activeDoc().id;
   editorStates.delete(id);
+  tabScrollTops.delete(id);
   store.close(id);
   const nextActive = store.activeDoc().id;
   if (previousId === id || nextActive !== previousId) {
@@ -172,7 +219,10 @@ async function closeTab(id: number): Promise<void> {
 let vaultPath: string | undefined;
 
 const fileTree = createFileTree(document.getElementById("file-tree")!, (path) => {
-  void openFileInTab(path);
+  openFileInTab(path).catch((err) => {
+    console.error("ファイルを開けませんでした:", path, err);
+    window.alert(`ファイルを開けませんでした:\n${path}\n\n${err}`);
+  });
 });
 
 /** readDir を再帰的に呼んでツリーの素材を集める(ドット始まりのフォルダには潜らない) */
@@ -195,16 +245,19 @@ async function walkDir(path: string): Promise<RawEntry[]> {
 async function refreshVault(): Promise<void> {
   if (!vaultPath) return;
   const entries = await walkDir(vaultPath);
-  fileTree.setTree(buildVaultTree(vaultPath, entries));
+  const tree = buildVaultTree(vaultPath, entries);
+  fileTree.setTree(tree);
   fileTree.setActivePath(store.activeDoc().path);
   vaultNameEl.textContent = basename(vaultPath);
   vaultNameEl.title = vaultPath;
+  const fileCount = countFiles(tree);
+  vaultFileCountEl.textContent = `${fileCount} ファイル`;
   statusbar.setVaultName(basename(vaultPath));
   sidebarEl.hidden = false;
 }
 
 async function doOpenFolder(): Promise<void> {
-  const path = await open({ directory: true });
+  const path = await open({ directory: true, title: "保管庫にするフォルダを選択" });
   if (!path || Array.isArray(path)) return;
   vaultPath = path;
   await refreshVault();
@@ -217,7 +270,7 @@ updateTabs();
 view.focus();
 
 setupDivider(document.getElementById("workspace")!, document.getElementById("divider")!);
-setupScrollSync(view, preview);
+const scrollSync = setupScrollSync(view, preview);
 
 // ---------------------------------------------------------------------------
 // 表示モード(エディタのみ / 分割 / プレビューのみ。ウィンドウ単位で1つ)
@@ -392,6 +445,13 @@ function applySettings(settings: Settings): void {
   } else {
     document.documentElement.style.removeProperty("--preview-font-family");
   }
+  // プレビュー本文の最大幅。standard は変数ごと外して CSS 側のフォールバック(46rem)に任せる
+  const previewMaxWidth = PREVIEW_MAX_WIDTH_CSS[settings.previewMaxWidth];
+  if (previewMaxWidth) {
+    document.documentElement.style.setProperty("--preview-max-width", previewMaxWidth);
+  } else {
+    document.documentElement.style.removeProperty("--preview-max-width");
+  }
   preview.setDebounceMs(settings.previewDebounceMs);
   rerenderPreviewIfMermaidThemeChanged();
   rerenderPreviewIfKrokiConfigChanged();
@@ -541,4 +601,11 @@ setupShortcuts({
   },
   onToggleSplit: () => applyViewMode(toggleSplit(viewModeState)),
   onTogglePreview: () => applyViewMode(togglePreview(viewModeState)),
+  onFind: () => {
+    // プレビューのみ表示中はエディタが非表示なので、ネイティブ検索バーに任せる。
+    // それ以外(エディタ表示中)はプレビューにフォーカスがあっても検索パネルを開く。
+    if (viewModeState.mode === "preview") return false;
+    openEditorSearch(view);
+    return true;
+  },
 });

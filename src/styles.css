@@ -12,6 +12,10 @@
   --fg: #26262e;
   --fg-muted: #6f6f7e;
   --border: #e1e1e8;
+  /* テーブル罫線専用。--border は UI の「目立たせたくない線」(メニュー境界・
+     ペイン区切り)に合わせて控えめなので、内容物であるテーブルの罫線は分離する。
+     ライトは共用のままで問題ないが、ダークは一段明るくしないと罫線が沈む */
+  --table-border: var(--border);
   --accent: #6d5bd0;
   --error: #b0362c;
   /* コード面(インラインコード・コードブロックの背景)。ダークでは地より
@@ -36,7 +40,12 @@
   --hl-title: #1b5fbd;
   --hl-attr: #6d5bd0;
   --hl-meta: #6f6f7e;
-  --editor-ratio: 50%;
+  /* エディタペインの幅の割合(単位なし)。分母はサイドバーを除いたコンテンツ領域 */
+  --editor-ratio: 0.5;
+  /* CodeMirror の行番号ガター幅(ui/editor.ts が実測して反映)。
+     ガター分を比率計算から除くことで、50% 設定時にエディタの「本文」領域が
+     プレビューと同じ幅になる(ガターはどちらのペインにもない飾りなので) */
+  --editor-gutter-width: 0px;
   --editor-font-size: 14px;
   --preview-font-size: 16px;
   color-scheme: light dark;
@@ -51,6 +60,7 @@
     --fg: #dcdce4;
     --fg-muted: #8d8da0;
     --border: #2c2c36;
+    --table-border: #40404e;
     --accent: #a78bfa;
     --error: #e5766c;
     --code-bg: #26262f;
@@ -72,6 +82,7 @@
   --fg: #dcdce4;
   --fg-muted: #8d8da0;
   --border: #2c2c36;
+  --table-border: #40404e;
   --accent: #a78bfa;
   --error: #e5766c;
   --code-bg: #26262f;
@@ -258,9 +269,43 @@ body {
 #tabbar-tabs {
   display: flex;
   align-items: stretch;
+  /* 溢れたときはスクロールバーを出さず、ホイール・左右ボタンで送る(ui/tabs.ts) */
   overflow-x: auto;
+  scrollbar-width: none;
   flex: 1;
   min-width: 0;
+}
+
+#tabbar-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* display: flex が UA の [hidden] { display: none } を上書きしてしまうため明示する */
+.tabbar-action[hidden],
+.tab-list-menu[hidden] {
+  display: none;
+}
+
+/* タブ溢れ時だけ現れる左右送り・一覧ボタン(タブ列と面一に置くので角丸なし) */
+.tab-scroll {
+  border-radius: 0;
+}
+
+.tab-list-menu {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.tab-list-dropdown {
+  left: auto;
+  right: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.tab-list-dropdown .menu-item.active {
+  color: var(--accent);
 }
 
 #tabbar-actions {
@@ -353,6 +398,15 @@ body {
   display: flex;
   flex: 1;
   min-height: 0;
+  /* --editor-ratio の分母となるコンテンツ領域(サイドバーを除いた幅)。
+     サイドバーの表示中だけその幅を差し引くことで、開閉してもエディタ:プレビューの
+     比率が保たれる */
+  --sidebar-width: 220px;
+  --content-width: 100%;
+}
+
+#workspace:has(> #sidebar:not([hidden])) {
+  --content-width: calc(100% - var(--sidebar-width));
 }
 
 /* ---------------------------------------------------------------------------
@@ -360,7 +414,7 @@ body {
 --------------------------------------------------------------------------- */
 #sidebar {
   flex: none;
-  width: 220px;
+  width: var(--sidebar-width);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -388,6 +442,20 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+#vault-file-count {
+  flex: none;
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+
+.tree-empty {
+  padding: 0.6rem 0.4rem;
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  line-height: 1.6;
 }
 
 #btn-vault-refresh {
@@ -483,7 +551,12 @@ body {
 }
 
 #editor-pane {
-  width: var(--editor-ratio);
+  /* 本文領域(ガター除く)が (コンテンツ幅 − ガター幅) × ratio になるよう、
+     ガター幅を先に引いてから比率を掛け、最後に戻す */
+  width: calc(
+    (var(--content-width) - var(--editor-gutter-width)) * var(--editor-ratio) +
+      var(--editor-gutter-width)
+  );
   min-width: 0;
   display: flex;
 }
@@ -553,7 +626,9 @@ body {
    プレビュー(Asciidoctor が生成する HTML 向け)
 --------------------------------------------------------------------------- */
 .adoc {
-  max-width: 46rem;
+  /* 本文幅は設定「プレビュー本文の幅」で変わる(main.ts が変数を設定する)。
+     変数未定義時のフォールバック 46rem が標準幅で、HTML エクスポートにもこちらが効く */
+  max-width: var(--preview-max-width, 46rem);
   margin: 0 auto;
   padding: 2rem 2.2rem 4rem;
   line-height: 1.75;
@@ -898,7 +973,7 @@ body {
 
 .adoc table.tableblock td,
 .adoc table.tableblock th {
-  border: 1px solid var(--border);
+  border: 1px solid var(--table-border);
   padding: 0.45rem 0.7rem;
   text-align: left;
 }
@@ -1166,4 +1241,55 @@ body {
 .settings-footer button:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+/* ---------------------------------------------------------------------------
+   検索パネル(@codemirror/search、basicSetup 同梱)。
+   既定は素の英語 UI なので、設定ダイアログのフォーム部品と揃えた見た目にする。
+   Ctrl+F はエディタ表示中なら常にこのパネルを開く(ui/shortcuts.ts + main.ts)。
+--------------------------------------------------------------------------- */
+.cm-panel.cm-search {
+  padding: 0.4rem 1.6rem 0.5rem 0.5rem;
+  background: var(--bg-subtle);
+  color: var(--fg);
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+}
+
+.cm-panel.cm-search .cm-textfield {
+  font: inherit;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.cm-panel.cm-search .cm-button {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-subtle);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.cm-panel.cm-search .cm-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.cm-panel.cm-search label {
+  color: var(--fg-muted);
+}
+
+.cm-panel.cm-search [name="close"] {
+  color: var(--fg-muted);
+  font-size: 1rem;
+}
+
+.cm-panel.cm-search [name="close"]:hover {
+  color: var(--fg);
 }

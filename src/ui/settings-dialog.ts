@@ -3,7 +3,13 @@
 // tauri-plugin-store とのやり取り(ブラウザプレビューでは失敗するので
 // インメモリにフォールバックする)を担う。
 import { load, type Store } from "@tauri-apps/plugin-store";
-import { DEFAULT_SETTINGS, mergeSettings, type Settings, type Theme } from "../core/settings";
+import {
+  DEFAULT_SETTINGS,
+  mergeSettings,
+  type PreviewMaxWidth,
+  type Settings,
+  type Theme,
+} from "../core/settings";
 
 const STORE_FILENAME = "settings.json";
 const STORE_KEY = "settings";
@@ -217,6 +223,33 @@ export function createSettingsDialog(
   );
   form.appendChild(previewFamily.row);
 
+  // --- プレビュー本文の幅 ---
+  const maxWidthRow = document.createElement("label");
+  maxWidthRow.className = "settings-row";
+  const maxWidthSpan = document.createElement("span");
+  maxWidthSpan.textContent = "プレビュー本文の幅";
+  const maxWidthSelect = document.createElement("select");
+  const maxWidthOptions: { value: PreviewMaxWidth; label: string }[] = [
+    { value: "standard", label: "標準(読みやすさ優先)" },
+    { value: "wide", label: "広い" },
+    { value: "full", label: "ウィンドウ幅いっぱい" },
+  ];
+  for (const opt of maxWidthOptions) {
+    const el = document.createElement("option");
+    el.value = opt.value;
+    el.textContent = opt.label;
+    maxWidthSelect.appendChild(el);
+  }
+  maxWidthSelect.value = settings.previewMaxWidth;
+  maxWidthSelect.addEventListener("change", () => {
+    settings = mergeSettings({ ...settings, previewMaxWidth: maxWidthSelect.value });
+    maxWidthSelect.value = settings.previewMaxWidth;
+    onChange(settings);
+  });
+  maxWidthRow.appendChild(maxWidthSpan);
+  maxWidthRow.appendChild(maxWidthSelect);
+  form.appendChild(maxWidthRow);
+
   // --- プレビューのデバウンス ---
   const debounceRow = document.createElement("label");
   debounceRow.className = "settings-row";
@@ -309,6 +342,7 @@ export function createSettingsDialog(
       editorFamily.input.value = settings.editorFontFamily;
       previewFontInput.value = String(settings.previewFontSize);
       previewFamily.input.value = settings.previewFontFamily;
+      maxWidthSelect.value = settings.previewMaxWidth;
       debounceInput.value = String(settings.previewDebounceMs);
       krokiEnabledInput.checked = settings.krokiEnabled;
       krokiUrlInput.value = settings.krokiServerUrl;
