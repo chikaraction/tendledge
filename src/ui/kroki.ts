@@ -10,10 +10,13 @@
 // 使えないため window.fetch にフォールバックする(kroki.io は CORS `*` を返す)。
 import { isTauri } from "@tauri-apps/api/core";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
+import { mapWithConcurrencyLimit } from "../core/concurrency";
 import { KROKI_LANGS, krokiCacheKey, krokiRequestUrl, svgToDataUri } from "../core/kroki";
 
 const REQUEST_TIMEOUT_MS = 10_000;
 const CACHE_LIMIT = 100;
+// 同時にサーバーへ投げる Kroki リクエストの上限(直列だと図 N 枚で N×レイテンシ待つため並列化)
+const KROKI_CONCURRENCY_LIMIT = 3;
 
 // キャッシュキー(サーバー + 言語 + ソース)→ data URI。
 // 同一ソースの再描画(入力デバウンス)のたびにサーバーへ再送しないための
@@ -34,28 +37,31 @@ function errorMessage(lang: string, err: unknown): string {
   return `Kroki(${lang}) エラー: ${err instanceof Error ? err.message : String(err)}`;
 }
 
-async function renderOne(
-  code: HTMLElement,
-  lang: string,
-  serverUrl: string,
+/**
+ * 指定キーの data URI を取得する。キャッシュ済みならそれを返し、未キャッシュなら
+ * fetch する。同一世代内(inFlight)で同じキーへの fetch がすでに進行中なら、
+ * その Promise を共有する(並列化した際に同一ソースを二重 fetch しないため)。
+ */
+function fetchDataUri(
+  key: string,
+  url: string,
+  source: string,
   fetchFn: typeof fetch,
   staleSignal: AbortSignal,
-): Promise<void> {
-  const block = code.closest(".listingblock, .literalblock") ?? code;
-  const doc = code.ownerDocument;
-  const source = (code.textContent ?? "").trim();
-  const url = krokiRequestUrl(serverUrl, lang);
-  if (!url) return; // KROKI_LANGS に含まれる言語のみ呼び出されるので通常到達しない
-  const key = krokiCacheKey(serverUrl, lang, source);
+  inFlight: Map<string, Promise<string>>,
+): Promise<string> {
+  const cached = dataUriCache.get(key);
+  if (cached !== undefined) return Promise.resolve(cached);
 
-  const controller = new AbortController();
-  const onStale = () => controller.abort();
-  staleSignal.addEventListener("abort", onStale);
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const existing = inFlight.get(key);
+  if (existing) return existing;
 
-  try {
-    let dataUri = dataUriCache.get(key);
-    if (dataUri === undefined) {
+  const promise = (async () => {
+    const controller = new AbortController();
+    const onStale = () => controller.abort();
+    staleSignal.addEventListener("abort", onStale);
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
       const res = await fetchFn(url, {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
@@ -67,10 +73,36 @@ async function renderOne(
         // Kroki は構文エラー時、理由をプレーンテキストの本文で返す
         throw new Error(text || `${res.status} ${res.statusText}`);
       }
-      dataUri = svgToDataUri(text);
+      const dataUri = svgToDataUri(text);
       if (dataUriCache.size >= CACHE_LIMIT) dataUriCache.clear();
       dataUriCache.set(key, dataUri);
+      return dataUri;
+    } finally {
+      clearTimeout(timeout);
+      staleSignal.removeEventListener("abort", onStale);
     }
+  })();
+  inFlight.set(key, promise);
+  return promise;
+}
+
+async function renderOne(
+  code: HTMLElement,
+  lang: string,
+  serverUrl: string,
+  fetchFn: typeof fetch,
+  staleSignal: AbortSignal,
+  inFlight: Map<string, Promise<string>>,
+): Promise<void> {
+  const block = code.closest(".listingblock, .literalblock") ?? code;
+  const doc = code.ownerDocument;
+  const source = (code.textContent ?? "").trim();
+  const url = krokiRequestUrl(serverUrl, lang);
+  if (!url) return; // KROKI_LANGS に含まれる言語のみ呼び出されるので通常到達しない
+  const key = krokiCacheKey(serverUrl, lang, source);
+
+  try {
+    const dataUri = await fetchDataUri(key, url, source, fetchFn, staleSignal, inFlight);
     const figure = doc.createElement("div");
     figure.className = "kroki-diagram";
     const img = doc.createElement("img");
@@ -90,9 +122,6 @@ async function renderOne(
     message.className = "kroki-error";
     message.textContent = errorMessage(lang, err);
     block.after(message);
-  } finally {
-    clearTimeout(timeout);
-    staleSignal.removeEventListener("abort", onStale);
   }
 }
 
@@ -126,11 +155,15 @@ export async function renderKrokiBlocks(
   currentGenerationController = generationController;
 
   const fetchFn = opts.fetchFn ?? resolveFetch();
-  for (const code of codes) {
-    if (generationController.signal.aborted) break;
+  // 世代内で key(サーバー+言語+ソース)→ fetch の Promise を共有し、並列化に伴う
+  // 同一ソースの二重 fetch を防ぐ(DOM 差し替え自体は renderOne 側で各ブロックごとに行う)。
+  const inFlight = new Map<string, Promise<string>>();
+
+  await mapWithConcurrencyLimit(codes, KROKI_CONCURRENCY_LIMIT, async (code) => {
+    if (generationController.signal.aborted) return; // 未開始分は開始しない
     const lang = code.dataset.lang;
-    if (!lang) continue;
-    await renderOne(code, lang, opts.serverUrl, fetchFn, generationController.signal);
-  }
+    if (!lang) return;
+    await renderOne(code, lang, opts.serverUrl, fetchFn, generationController.signal, inFlight);
+  });
   return true;
 }
