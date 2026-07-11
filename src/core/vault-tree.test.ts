@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildVaultTree, countFiles, isSupportedFile, type RawEntry } from "./vault-tree";
+import {
+  buildVaultTree,
+  countFiles,
+  exceedsMaxVaultDepth,
+  isSupportedFile,
+  MAX_VAULT_DEPTH,
+  type RawEntry,
+} from "./vault-tree";
 
 // readDir の結果(名前 + 種別 + 子)からサイドバーに表示するツリーを作る。
 // 対応拡張子のファイルだけを表示し、空になるフォルダは隠す。
@@ -99,6 +106,18 @@ describe("buildVaultTree: readDir 結果 → 表示ツリー", () => {
     const entries: RawEntry[] = [{ name: "a.adoc", isDirectory: false }];
     const tree = buildVaultTree("/home/user/vault", entries);
     expect(tree[0].path).toBe("/home/user/vault/a.adoc");
+  });
+});
+
+describe("exceedsMaxVaultDepth: 走査の深さ上限判定(シンボリックリンク循環対策)", () => {
+  it("上限未満の深さは false", () => {
+    expect(exceedsMaxVaultDepth(0)).toBe(false);
+    expect(exceedsMaxVaultDepth(MAX_VAULT_DEPTH - 1)).toBe(false);
+  });
+
+  it("上限に達した深さは true(そこから先には潜らない)", () => {
+    expect(exceedsMaxVaultDepth(MAX_VAULT_DEPTH)).toBe(true);
+    expect(exceedsMaxVaultDepth(MAX_VAULT_DEPTH + 1)).toBe(true);
   });
 });
 

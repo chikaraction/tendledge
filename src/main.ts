@@ -23,7 +23,7 @@ import {
   toggleSplit,
   type ViewModeState,
 } from "./core/view-mode";
-import { buildVaultTree, countFiles, type RawEntry } from "./core/vault-tree";
+import { buildVaultTree, countFiles, exceedsMaxVaultDepth, type RawEntry } from "./core/vault-tree";
 import { sampleDoc } from "./sample-doc";
 import { setupDivider } from "./ui/divider";
 import { createEditor, editorScrollToLine, editorTopLine, openEditorSearch } from "./ui/editor";
@@ -248,16 +248,28 @@ const fileTree = createFileTree(document.getElementById("file-tree")!, (path) =>
   });
 });
 
-/** readDir を再帰的に呼んでツリーの素材を集める(ドット始まりのフォルダには潜らない) */
-async function walkDir(path: string): Promise<RawEntry[]> {
-  const entries = await readDir(path);
+/**
+ * readDir を再帰的に呼んでツリーの素材を集める(ドット始まりのフォルダには潜らない)。
+ * サブフォルダの readDir が失敗しても(アクセス拒否等)そのフォルダをスキップして
+ * 残りは表示する。深さ上限(MAX_VAULT_DEPTH)を超えたら潜らずに空扱いにする
+ * (Windows のジャンクション/シンボリックリンクの循環で無限再帰しないための安全弁)。
+ */
+async function walkDir(path: string, depth = 0): Promise<RawEntry[]> {
+  if (exceedsMaxVaultDepth(depth)) return [];
+  let entries: Awaited<ReturnType<typeof readDir>>;
+  try {
+    entries = await readDir(path);
+  } catch (err) {
+    console.error("フォルダを読み込めませんでした(スキップします):", path, err);
+    return [];
+  }
   return Promise.all(
     entries.map(async (e): Promise<RawEntry> => {
       if (e.isDirectory && !e.name.startsWith(".")) {
         return {
           name: e.name,
           isDirectory: true,
-          children: await walkDir(joinPath(path, e.name)),
+          children: await walkDir(joinPath(path, e.name), depth + 1),
         };
       }
       return { name: e.name, isDirectory: e.isDirectory };
@@ -267,16 +279,21 @@ async function walkDir(path: string): Promise<RawEntry[]> {
 
 async function refreshVault(): Promise<void> {
   if (!vaultPath) return;
-  const entries = await walkDir(vaultPath);
-  const tree = buildVaultTree(vaultPath, entries);
-  fileTree.setTree(tree);
-  fileTree.setActivePath(store.activeDoc().path);
-  vaultNameEl.textContent = basename(vaultPath);
-  vaultNameEl.title = vaultPath;
-  const fileCount = countFiles(tree);
-  vaultFileCountEl.textContent = `${fileCount} ファイル`;
-  statusbar.setVaultName(basename(vaultPath));
-  sidebarEl.hidden = false;
+  try {
+    const entries = await walkDir(vaultPath);
+    const tree = buildVaultTree(vaultPath, entries);
+    fileTree.setTree(tree);
+    fileTree.setActivePath(store.activeDoc().path);
+    vaultNameEl.textContent = basename(vaultPath);
+    vaultNameEl.title = vaultPath;
+    const fileCount = countFiles(tree);
+    vaultFileCountEl.textContent = `${fileCount} ファイル`;
+    statusbar.setVaultName(basename(vaultPath));
+    sidebarEl.hidden = false;
+  } catch (err) {
+    console.error("保管庫を読み込めませんでした:", vaultPath, err);
+    window.alert(`保管庫を読み込めませんでした:\n${vaultPath}\n\n${err}`);
+  }
 }
 
 async function doOpenFolder(): Promise<void> {

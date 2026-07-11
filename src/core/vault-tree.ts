@@ -20,6 +20,18 @@ export interface VaultNode {
 
 export const SUPPORTED_EXTENSIONS = ["adoc", "asciidoc", "asc", "txt"];
 
+/**
+ * 保管庫走査(walkDir)の最大深さ。Windows のジャンクション/シンボリックリンクが
+ * 自己参照する構成だと readDir の再帰が終わらないため、実用上ありえない深さで
+ * 打ち切る安全弁として設ける。
+ */
+export const MAX_VAULT_DEPTH = 20;
+
+/** この深さのフォルダにはもう潜らないべきか(depth はルート=0 始まり) */
+export function exceedsMaxVaultDepth(depth: number): boolean {
+  return depth >= MAX_VAULT_DEPTH;
+}
+
 /** エディタで開ける拡張子か(大文字小文字は区別しない) */
 export function isSupportedFile(name: string): boolean {
   const match = /\.([^.]+)$/.exec(name);
