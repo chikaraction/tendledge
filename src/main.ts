@@ -1,7 +1,8 @@
 // 合成ルート: DOM の取得と各モジュールの接続だけを行う。
 // ロジックは core/(純粋関数)、DOM 操作は ui/、変換は render.ts に置く。
 import type { EditorState } from "@codemirror/state";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { convertFileSrc, isTauri } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { readDir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -211,6 +212,28 @@ async function closeTab(id: number): Promise<void> {
   } else {
     updateTabs();
   }
+}
+
+// ウィンドウの✕ボタンでは Ctrl+W と違って確認なしに閉じてしまう(未保存データが
+// 無言で消える)ため、Tauri 実機は onCloseRequested、ブラウザプレビューは
+// beforeunload でそれぞれガードする。両方登録すると実機で確認が二重に出るため分岐する。
+if (isTauri()) {
+  void getCurrentWindow().onCloseRequested((event) => {
+    if (!store.hasDirty()) return;
+    const ok = window.confirm(
+      "保存されていない変更があります。保存せずにアプリを終了しますか?",
+    );
+    if (!ok) event.preventDefault();
+  });
+} else {
+  // beforeunload 内での window.confirm は主要ブラウザが無視するため使えない。
+  // 標準の作法どおり preventDefault + returnValue でブラウザ既定の確認ダイアログに委ねる
+  // (文言はセキュリティ上の理由で主要ブラウザが独自メッセージに差し替える)。
+  window.addEventListener("beforeunload", (event) => {
+    if (!store.hasDirty()) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
 }
 
 // ---------------------------------------------------------------------------

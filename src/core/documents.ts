@@ -25,6 +25,8 @@ export interface DocumentStore {
   list(): readonly DocumentInfo[];
   activeDoc(): DocumentInfo;
   isDirty(id: number): boolean;
+  /** いずれかのタブに未保存の変更があるか(ウィンドウクローズ時の確認に使う) */
+  hasDirty(): boolean;
   /** 空の Untitled タブを末尾に追加してアクティブにする */
   openUntitled(): DocumentInfo;
   /** ファイルをタブとして開く。同じ path が開いていれば既存タブをアクティブ化する */
@@ -79,6 +81,9 @@ export function createDocumentStore(opts: { initialContent: string }): DocumentS
     isDirty(id) {
       const doc = find(id);
       return doc !== undefined && doc.content !== doc.lastSavedContent;
+    },
+    hasDirty() {
+      return docs.some((d) => d.content !== d.lastSavedContent);
     },
     openUntitled() {
       const doc = createDoc(undefined, "");
