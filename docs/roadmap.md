@@ -17,29 +17,16 @@ Milestone 1〜13 は実装済み。以降の計画を記す。
 - M13: バグ修正・使い勝手改善([milestone-13-plan.md](milestone-13-plan.md))
 - M14: データ保護・堅牢性([milestone-14-plan.md](milestone-14-plan.md))
 - M15: セキュリティ強化([milestone-15-plan.md](milestone-15-plan.md))
+- M16: パフォーマンス改善([milestone-16-plan.md](milestone-16-plan.md))
 
-## これからの計画(M16〜M19)
+## これからの計画(M17〜M19)
 
-M16〜M17 は 2026-07 のプロジェクト全体レビュー(コードレビュー)の指摘に基づく。
+M17 は 2026-07 のプロジェクト全体レビュー(コードレビュー)の指摘に基づく。
 M18 はサイドバー幅リサイズ。M19 はリブランディングと配布準備。
 
-推奨着手順: **M16 / M17(互いに独立・順不同)→ M18 → M19(最後)**。
+推奨着手順: **M17 → M18 → M19(最後)**。
 M19 は新しいアプリ名の決定が前提になるので、名称が決まるまでの間に
-M16〜M18 を進めるのが効率的。
-
-## Milestone 16: パフォーマンス改善(小〜中・半日規模)
-
-- **キーストローク毎のタブバー全再構築の抑制**: 現状は 1 入力ごとに
-  `updateTabs()` → タブ全 DOM 再生成 + scrollWidth 読み取り(強制レイアウト)+
-  `scrollIntoView` が走る。`core/documents.ts` に「dirty 状態が変化したか」を
-  返す仕組みを追加(テストファースト)し、変化時のみ `updateTabs()` を呼ぶ
-- **`exportHtml` の順序入れ替え**: 現状は HTML 構築(Kroki 有効時は文書内容の
-  外部送信を含む)が保存ダイアログより先に走るため、キャンセルしても送信済みになる。
-  `save()` を先に呼ぶ
-- **Kroki 図の並列 fetch**: `ui/kroki.ts` の直列 for-await を同時数制限
-  (2〜3本)付きの並列に(図 N 枚で N×レイテンシ待つ現状を短縮)
-- **`ui/divider.ts` のドラッグ最適化**: ガター幅の `getComputedStyle` 読み取りを
-  pointermove 毎ではなく pointerdown 時の 1 回に
+M17〜M18 を進めるのが効率的。
 
 ## Milestone 17: テスト補強・小掃除(中・1日規模)
 
