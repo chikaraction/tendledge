@@ -5,6 +5,13 @@ export function setupDivider(workspace: HTMLElement, divider: HTMLElement): void
     e.preventDefault();
     divider.setPointerCapture(e.pointerId);
 
+    // ガター幅はドラッグ中に変化しないため、pointerdown 時に 1 回だけ読み取り
+    // onMove からクロージャで参照する(getComputedStyle は強制スタイル解決を
+    // 伴うため、pointermove 毎に呼ぶとドラッグ中に無駄なレイアウト計算が走る)。
+    const gutterWidth = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--editor-gutter-width"),
+    );
+
     const onMove = (ev: PointerEvent) => {
       const rect = workspace.getBoundingClientRect();
       // --editor-ratio はサイドバーを除いたコンテンツ領域に対する割合(単位なし)。
@@ -17,9 +24,6 @@ export function setupDivider(workspace: HTMLElement, divider: HTMLElement): void
       // styles.css 側は width = (contentWidth - gutterWidth) * ratio + gutterWidth で
       // #editor-pane 幅を決めているため、ドラッグ計算も同じ式を逆算する
       // (ガター幅を除いた本文領域だけで比率を取ることで、50% でプレビューと同幅になる)。
-      const gutterWidth = parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue("--editor-gutter-width"),
-      );
       // 分母(ガターを除いたコンテンツ幅)が極端に小さい/0以下だと ratio が
       // NaN や Infinity になり --editor-ratio に不正値が入ってレイアウトが壊れる。
       // ウィンドウの最小サイズ(tauri.conf.json)である程度は防げるが、念のため

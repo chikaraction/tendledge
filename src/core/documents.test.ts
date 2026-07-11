@@ -92,6 +92,33 @@ describe("createDocumentStore: タブ = ドキュメントの状態管理", () =
     });
   });
 
+  describe("updateContent: dirty 状態が変化したかを返す", () => {
+    it("保存済みの文書を編集して dirty になると true を返す", () => {
+      const store = createDocumentStore({ initialContent: "" });
+      const { doc } = store.openFile("a.adoc", "元の内容");
+      expect(store.updateContent(doc.id, "編集した内容")).toBe(true);
+    });
+
+    it("すでに dirty な文書をさらに編集しても false を返す(dirty→dirty)", () => {
+      const store = createDocumentStore({ initialContent: "" });
+      const { doc } = store.openFile("a.adoc", "元の内容");
+      store.updateContent(doc.id, "編集した内容1");
+      expect(store.updateContent(doc.id, "編集した内容2")).toBe(false);
+    });
+
+    it("dirty な文書を保存時と同じ内容に戻すと true を返す(dirty→非dirty)", () => {
+      const store = createDocumentStore({ initialContent: "" });
+      const { doc } = store.openFile("a.adoc", "元の内容");
+      store.updateContent(doc.id, "編集した内容");
+      expect(store.updateContent(doc.id, "元の内容")).toBe(true);
+    });
+
+    it("存在しない id を指定すると false を返す", () => {
+      const store = createDocumentStore({ initialContent: "" });
+      expect(store.updateContent(9999, "内容")).toBe(false);
+    });
+  });
+
   describe("hasDirty: いずれかのタブに未保存の変更があるか", () => {
     it("すべてのタブが保存済みなら false", () => {
       const store = createDocumentStore({ initialContent: "" });

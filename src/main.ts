@@ -115,10 +115,14 @@ const editor = createEditor({
   parent: document.getElementById("editor-pane")!,
   doc: sampleDoc,
   onDocChanged: (doc) => {
-    store.updateContent(store.activeDoc().id, doc);
+    // タブバーの全再構築(renderTabs + tabOverflow.update の強制レイアウト)は
+    // dirty ドットの表示が変わるとき(dirty 状態遷移)だけ必要。入力のたびに
+    // 呼ぶとキーストローク毎に無駄な再描画が走るため、更新有無を updateContent の
+    // 戻り値で判定する。
+    const dirtyChanged = store.updateContent(store.activeDoc().id, doc);
     preview.scheduleRender(doc);
     statusbar.setDocText(doc);
-    updateTabs();
+    if (dirtyChanged) updateTabs();
   },
   onCursorChanged: (line, col) => statusbar.setCursor(line, col),
 });
@@ -442,15 +446,18 @@ async function doSaveAs(): Promise<void> {
 // HTML / PDF エクスポート
 // ---------------------------------------------------------------------------
 async function exportHtml(): Promise<void> {
-  const html = await buildExportHtml(view.state.doc.toString(), {
-    enabled: currentSettings.krokiEnabled,
-    serverUrl: currentSettings.krokiServerUrl,
-  });
+  // 保存先ダイアログを先に出す。buildExportHtml は Kroki 有効時に文書内容を
+  // 外部サーバーへ送信するため、キャンセル時に送信が発生しないよう
+  // 「パスが決まってから生成する」順序にしている。
   const path = await save({
     filters: [{ name: "HTML", extensions: ["html"] }],
     defaultPath: suggestedExportName(store.activeDoc().path, "html"),
   });
   if (!path) return;
+  const html = await buildExportHtml(view.state.doc.toString(), {
+    enabled: currentSettings.krokiEnabled,
+    serverUrl: currentSettings.krokiServerUrl,
+  });
   await writeTextFile(path, html);
 }
 
