@@ -1,73 +1,106 @@
-# ロードマップ(Milestone 8 以降)
+# ロードマップ(Milestone 14 以降)
 
-Milestone 1〜7(エディタ/プレビュー、ペイン、ハイライト、ファイルI/O、スクロール同期、
-エクスポート、タブ、保管庫、設定、Slate UI)は実装済み。以降の計画を記す。
+Milestone 1〜13 は実装済み。以降の計画を記す。
 各マイルストーンの着手時には `milestone` スキルの手順に従い、
 `docs/milestone-N-plan.md` の設計文書を別途起こすこと(本書はその上位のロードマップ)。
+マイルストーンの積み残し・保留項目は本書ではなく [backlog.md](backlog.md) で管理する。
 
-推奨着手順: **M8 → M9 → M10 → M11 → M12**。
-M8 は小粒の即効タスクで後続の検証素材にもなる。M9/M10 は互いに独立。
-M11(Mermaid)で作図系の下地(サンプル・サニタイズ設計)を作ってから、
-外部サービス連携を伴う M12 に進むのが低リスク。
+## 実装済みマイルストーン
 
-## Milestone 8: サンプル文書の整備(小・半日規模)
+- M1〜M7: エディタ/プレビュー、ペイン、ハイライト、ファイルI/O、スクロール同期、
+  エクスポート、タブ、保管庫、設定、Slate UI
+- M8: サンプル文書の整備([milestone-8-plan.md](milestone-8-plan.md))
+- M9: ビューモード切り替え([milestone-9-plan.md](milestone-9-plan.md))
+- M10: プレビューのシンタックスハイライト([milestone-10-plan.md](milestone-10-plan.md))
+- M11: 作図① Mermaid([milestone-11-plan.md](milestone-11-plan.md))
+- M12: 作図② PlantUML / Draw.io(Kroki 経由)([milestone-12-plan.md](milestone-12-plan.md))
+- M13: バグ修正・使い勝手改善([milestone-13-plan.md](milestone-13-plan.md))
 
-- `sample/04-tables.adoc` に行結合(`.2+|`)・行列同時結合(`2.2+|`)の例を追加し、
-  節見出し「セル結合(列・行)」の実体を揃える
-- サンプル中の誤った記法・実挙動と食い違う説明を修正
-  (レビューで洗い出した修正候補リストに基づく。ユーザー指摘分も合流させる)
-- `src/asciidoc-mode.ts` がセル結合記法(`2+|` `.3+|`)でハイライトを
-  壊さないか確認し、必要なら `token()` を拡張(テスト対象)
+## これからの計画(M14〜M18)
 
-## Milestone 9: ビューモード切り替え(中・1日規模)
+M14〜M17 は 2026-07 のプロジェクト全体レビュー(コードレビュー)の指摘に基づく。
+M18 はリブランディングと配布準備。
 
-VSCode 風に、タブバー右端のボタンでプレビューの表示形態を切り替える。
+推奨着手順: **M14 → M15 → M16 / M17(互いに独立・順不同)→ M18(最後)**。
+M14 はデータ損失リスクを含むため最優先。M18 は新しいアプリ名の決定が前提になるので、
+名称が決まるまでの間に M15〜M17 を進めるのが効率的。
 
-- `core/view-mode.ts`(新規・テストファースト):
-  「エディタのみ / 分割(現状) / プレビューのみ」の3状態と遷移ルール。
-  タブごとではなくウィンドウ単位のモードから始める
-- タブバー右端にアクション領域を追加し、Lucide アイコンのボタン2つを配置
-  (`ui/icons.ts` の `icons` マップ経由)
-  - 「横にプレビューを開く」= 分割 ⇔ エディタのみ のトグル(VSCode の Ctrl+K V 相当)
-  - 「プレビューとして開く」= プレビューのみ表示(VSCode の Ctrl+Shift+V 相当)
-- divider・スクロール同期はモードに応じて表示/停止。
-  ショートカットは `ui/shortcuts.ts`、メニューバー「表示」にも項目を追加
-- 表示モードを設定として永続化するか(次回起動時に復元)は設計時に決定
+## Milestone 14: データ保護・堅牢性(小〜中・半日規模)
 
-## Milestone 10: プレビューのコードブロック・シンタックスハイライト(中・1日規模)
+レビュー指摘のうち「データが消える・アプリが固まる」系をまとめて解消する。
 
-- 方式: `source-highlighter: highlight.js` 属性で Asciidoctor に言語クラス付き
-  HTML を出させ、サニタイズ後に highlight.js をローカルバンドルで適用
-  (CDN 依存なし・オフライン動作維持)
-- DOMPurify がクラス属性・`<span>` を通すことの確認、
-  ダーク/ライトテーマに追従するハイライトテーマの CSS 変数化
-- HTML エクスポート(standalone)側の扱い(インライン CSS or スクリプト同梱)を設計判断
-- `sample/03-blocks.adoc` に言語サンプルを追加し、説明文を実挙動に一致させる
-- スコープ外: エディタ(CodeMirror)側のコードブロック内ネスト言語ハイライト。
-  StreamParser では高コストなので、必要なら別マイルストーンに切り出す
+- **ウィンドウクローズ時の未保存ガード(最優先)**: 現状、Ctrl+W には確認があるのに
+  ウィンドウの✕ボタンでは未保存の変更が無言で消える。Tauri 実機は
+  `getCurrentWindow().onCloseRequested` で dirty タブがあれば confirm →
+  キャンセルなら `preventDefault()`。ブラウザプレビュー用に `beforeunload` も併設する
+- **`walkDir`(main.ts)の堅牢化**: サブフォルダの `readDir` 失敗(アクセス拒否等)を
+  try/catch でスキップして残りを表示する。Windows のジャンクション/シンボリックリンク
+  循環で無限再帰しないよう深さ上限を設ける。再読み込みボタン経由の `refreshVault` が
+  未処理の Promise 拒否で無言失敗しないようエラー表示を付ける
+- **タブ切替スクロール復元の競合修正**: `preview.render().then()` 頼みをやめ、
+  プレビュー DOM の差し替え直後(同期)に scrollTop を復元し、図の非同期尾部は
+  世代ガードで守る(素早い連続切替で古い `.then()` が後勝ちする競合、および
+  Kroki 有効時にネットワーク完了までスクロール同期が止まる問題の両方を解消)。
+  `ui/scroll-sync.ts` の suspend も boolean から世代/カウント方式へ
+- **`ui/shortcuts.ts` の修飾キー判定**: Ctrl+F が Shift/Alt 併押下でも発火する
+  (欧州系レイアウトの AltGr+F は ctrlKey+altKey として届くため文字入力を潰す)。
+  Alt 併押下を除外する
+- **ウィンドウ最小サイズ**: `tauri.conf.json` に `minWidth` / `minHeight` を追加し、
+  極端に狭いウィンドウで `ui/divider.ts` の比率計算が NaN になる端を
+  分母ガードとあわせて塞ぐ
 
-## Milestone 11: 作図① Mermaid(中・1日規模)
+## Milestone 15: セキュリティ強化(小・半日規模)
 
-- `[mermaid]` ブロック(または `[source,mermaid]`)を拾い、
-  mermaid.js でクライアントサイドレンダリング(オフライン完結・外部送信なし)
-- サニタイズとの整合が要注意: 生成 SVG を `sanitizePreviewHtml` の防壁を
-  壊さずに挿入する設計(レンダリング後 DOM への挿入順序、DOMPurify の SVG プロファイル)
-- テーマ追従(mermaid の dark/default 切り替え)、`sample/07-diagrams.adoc` を新設
-- HTML エクスポートでの扱い(SVG 焼き込み or スクリプト同梱)を設計時に決定
+WebView は第三者の .adoc を開く(保管庫)ため、DOMPurify が破られた場合の
+影響範囲を狭める。設定変更が中心だが、すべて実機確認(verify-tauri)が必要。
 
-## Milestone 12: 作図② PlantUML / Draw.io(大・要調査・2日規模)
+- **`withGlobalTauri: false` へ変更**: `window.__TAURI__` はフロントエンドで未使用
+  (grep 確認済み。ES import のみ使用)。無効化すれば XSS 時の攻撃面が確実に減る
+- **`fs:scope: ["**"]` の縮小を検討**(例: ユーザープロファイル配下のみ)。
+  M13 で「fs:scope なしでは保管庫サブフォルダが開けない」と判明した経緯
+  (CLAUDE.md 参照)があるため、縮小後に保管庫サブフォルダのファイルが開けることを
+  実機確認する。判断を保留する場合は「現状維持」と理由を本書か設計文書に明記して閉じる
+- **CSP・`assetProtocol.scope: ["**"]` の再点検**(同上の判断を記録する)
 
-- PlantUML / Draw.io はブラウザ内変換不可のため、Kroki(kroki.io または self-host)へ
-  図のソースを送って SVG を得る方式が現実解。
-  Kroki は PlantUML / Draw.io(diagramsnet)/ Mermaid ほか多数を単一 API でカバー
-- 設計上の論点(実装前にユーザー判断が必要):
-  - 文書内容の一部を外部サーバーへ送るため、設定でのオプトイン +
-    サーバー URL 設定(self-host 対応)を用意する
-  - オフライン時のフォールバック表示
-- CSP(`src-tauri/tauri.conf.json`)への Kroki ドメイン追加、
-  fetch まわりの権限確認(CLAUDE.md の流儀どおり実物の permissions で確認)
-- Draw.io は「Kroki 経由の .drawio 埋め込みレンダリング」までをスコープとし、
-  GUI での作図編集は別物(大型)なので必要なら M13 以降で改めて検討
+## Milestone 16: パフォーマンス改善(小〜中・半日規模)
 
-マイルストーンの積み残し・保留項目は本書ではなく [backlog.md](backlog.md) で管理する
-(M11 の「横長の図の拡大表示」はそちらへ移動済み)。
+- **キーストローク毎のタブバー全再構築の抑制**: 現状は 1 入力ごとに
+  `updateTabs()` → タブ全 DOM 再生成 + scrollWidth 読み取り(強制レイアウト)+
+  `scrollIntoView` が走る。`core/documents.ts` に「dirty 状態が変化したか」を
+  返す仕組みを追加(テストファースト)し、変化時のみ `updateTabs()` を呼ぶ
+- **`exportHtml` の順序入れ替え**: 現状は HTML 構築(Kroki 有効時は文書内容の
+  外部送信を含む)が保存ダイアログより先に走るため、キャンセルしても送信済みになる。
+  `save()` を先に呼ぶ
+- **Kroki 図の並列 fetch**: `ui/kroki.ts` の直列 for-await を同時数制限
+  (2〜3本)付きの並列に(図 N 枚で N×レイテンシ待つ現状を短縮)
+- **`ui/divider.ts` のドラッグ最適化**: ガター幅の `getComputedStyle` 読み取りを
+  pointermove 毎ではなく pointerdown 時の 1 回に
+
+## Milestone 17: テスト補強・小掃除(中・1日規模)
+
+- **`src/asciidoc-mode.ts` のキャラクタリゼーションテスト新設**:
+  手書き StreamParser(blockStack によるネストブロック解決)はリポジトリで最も複雑な
+  純粋ロジックなのに唯一テストがない。トークン列を仕様として固定する
+  (ネストブロック・見出し・テーブル・セル結合などの回帰防止)
+- **タブラベル生成の重複解消**: `d.path ? basename(d.path) : "Untitled"` が
+  main.ts と ui/tabs.ts の 2 箇所にある。共有ヘルパーに集約する
+- **タブ一覧ドロップダウンの開閉統一**: ui/tabs.ts のドロップダウン開閉
+  (外側クリック・Escape)が core/menu.ts の状態機械と別実装になっている。
+  統一するか、規模が見合わなければ backlog へ送る判断を設計時に行う
+
+## Milestone 18: リブランディングと配布準備(中・1日規模+名称決定)
+
+配布ビルドを作る前の名前・アイコン・設定の整備。**新しいアプリ名の決定が前提**
+(アプリ名とリポジトリ名は現行の asciidoc-editor から変更予定)。
+
+- **新しいアプリ名の決定**(未定。ここが以降すべての前提)
+- **名称の反映**: `tauri.conf.json` の `productName` / ウィンドウタイトル /
+  `package.json` の name / README。`identifier` は現状プレースホルダ
+  (`com.example.asciidoc-editor`)のままなので正式なものへ変更する
+  (identifier は設定ストア等の保存場所に影響するため変更手順を設計時に確認)
+- **GitHub リポジトリ名の変更** + ローカル remote URL の更新
+- **アプリアイコンの作成**: 元画像(1024×1024 PNG)を 1 枚用意し、
+  `npm run tauri icon <path>` で全プラットフォーム分(.ico / .icns / PNG 各種)を
+  `src-tauri/icons/` に生成する
+- **リリースビルドの確認**: `npm run tauri build` を通し、生成物を
+  verify-tauri チェックリストで実機確認する
