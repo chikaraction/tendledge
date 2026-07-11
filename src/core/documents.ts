@@ -6,6 +6,8 @@
 // 不変条件: ドキュメントは常に 1 つ以上存在し、必ず 1 つがアクティブである。
 // (最後のタブを閉じたら空の Untitled を自動生成してこの不変条件を守る)
 
+import { basename } from "./paths";
+
 export interface DocumentInfo {
   /** ストア内で一意な ID(連番。パスとは独立) */
   readonly id: number;
@@ -13,6 +15,11 @@ export interface DocumentInfo {
   readonly path: string | undefined;
   /** 現在の内容(dirty 判定用に ui 層から同期される) */
   readonly content: string;
+}
+
+/** タブ表示用のラベル。path があればファイル名、なければ "Untitled"。 */
+export function documentLabel(doc: Pick<DocumentInfo, "path">): string {
+  return doc.path ? basename(doc.path) : "Untitled";
 }
 
 export interface OpenFileResult {

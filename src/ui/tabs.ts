@@ -1,6 +1,5 @@
 // タブバーの描画(状態は core/documents.ts が持ち、ここは表示とイベントだけ)
-import type { DocumentInfo } from "../core/documents";
-import { basename } from "../core/paths";
+import { documentLabel, type DocumentInfo } from "../core/documents";
 import { icon, icons } from "./icons";
 
 export interface TabsHandlers {
@@ -24,7 +23,7 @@ export function renderTabs(
 
       const label = document.createElement("span");
       label.className = "tab-label";
-      label.textContent = doc.path ? basename(doc.path) : "Untitled";
+      label.textContent = documentLabel(doc);
       tab.appendChild(label);
 
       const dirty = document.createElement("span");
