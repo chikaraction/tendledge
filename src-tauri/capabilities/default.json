@@ -5,6 +5,7 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
+    "core:window:allow-destroy",
     "opener:default",
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
@@ -14,6 +15,7 @@
       "allow": ["**"]
     },
     "dialog:default",
+    "dialog:allow-confirm",
     "store:default",
     "window-state:default",
     {

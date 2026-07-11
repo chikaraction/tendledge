@@ -92,6 +92,30 @@ describe("createDocumentStore: タブ = ドキュメントの状態管理", () =
     });
   });
 
+  describe("hasDirty: いずれかのタブに未保存の変更があるか", () => {
+    it("すべてのタブが保存済みなら false", () => {
+      const store = createDocumentStore({ initialContent: "" });
+      store.openFile("a.adoc", "本文A");
+      expect(store.hasDirty()).toBe(false);
+    });
+
+    it("非アクティブなタブが dirty なだけでも true になる", () => {
+      const store = createDocumentStore({ initialContent: "" });
+      const { doc } = store.openFile("a.adoc", "元の内容");
+      store.updateContent(doc.id, "編集した内容");
+      store.openUntitled(); // 別タブに切り替えても a.adoc の dirty は残る
+      expect(store.hasDirty()).toBe(true);
+    });
+
+    it("dirty を保存し直すと false に戻る", () => {
+      const store = createDocumentStore({ initialContent: "" });
+      const { doc } = store.openFile("a.adoc", "元の内容");
+      store.updateContent(doc.id, "編集した内容");
+      store.markSaved(doc.id, "編集した内容");
+      expect(store.hasDirty()).toBe(false);
+    });
+  });
+
   describe("activate: タブの切り替え", () => {
     it("指定したタブがアクティブになる", () => {
       const store = createDocumentStore({ initialContent: "" });

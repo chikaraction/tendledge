@@ -1,7 +1,8 @@
 // 合成ルート: DOM の取得と各モジュールの接続だけを行う。
 // ロジックは core/(純粋関数)、DOM 操作は ui/、変換は render.ts に置く。
 import type { EditorState } from "@codemirror/state";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { convertFileSrc, isTauri } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { readDir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -22,8 +23,9 @@ import {
   toggleSplit,
   type ViewModeState,
 } from "./core/view-mode";
-import { buildVaultTree, countFiles, type RawEntry } from "./core/vault-tree";
+import { buildVaultTree, countFiles, exceedsMaxVaultDepth, type RawEntry } from "./core/vault-tree";
 import { sampleDoc } from "./sample-doc";
+import { alertDialog, confirmDialog } from "./ui/dialogs";
 import { setupDivider } from "./ui/divider";
 import { createEditor, editorScrollToLine, editorTopLine, openEditorSearch } from "./ui/editor";
 import { createFileTree } from "./ui/file-tree";
@@ -152,6 +154,11 @@ function updateTabs(): void {
   tabOverflow.update();
 }
 
+// 素早い連続タブ切替(A→B→C)で、後から解決した古い .then() が新しいタブの
+// プレビュー scrollTop を上書きしてしまわないためのガード。switchEditorTo が
+// 呼ばれるたびに進み、.then() 側は「自分が最新の切替か」をこれで確認する。
+let scrollRestoreGeneration = 0;
+
 /** アクティブタブの EditorState を退避してから、指定タブの状態に切り替える */
 function switchEditorTo(id: number, previousId?: number): void {
   // 切替の間はスクロール同期を止める。setState でエディタの内容量が変わると
@@ -178,10 +185,22 @@ function switchEditorTo(id: number, previousId?: number): void {
   view.focus();
   const scroll = tabScrollTops.get(id);
   view.scrollDOM.scrollTop = scroll?.editor ?? 0;
-  // プレビューは描画完了で内容が入れ替わってから位置を戻す(未退避のタブは先頭)。
-  // 両ペインの位置が確定してから同期を再開する。
-  void preview.render(view.state.doc.toString()).then(() => {
-    preview.paneEl.scrollTop = scroll?.preview ?? 0;
+  // render() の innerHTML 差し替え自体は同期実行される(mermaid/Kroki の非同期完了を
+  // 待つ必要があるのは decorateDiagrams だけ)。呼び出し直後に scrollTop を復元すれば、
+  // 新しいタブのアンカーに対して正しい位置が決まる。.then() まで待つと、素早い連続切替
+  // (A→B→C)で後発の解決が先発を追い越し、表示中のタブに別タブの位置を適用してしまう
+  // 競合があったため、同期復元を主経路にした。
+  const generation = ++scrollRestoreGeneration;
+  const renderDone = preview.render(view.state.doc.toString());
+  preview.paneEl.scrollTop = scroll?.preview ?? 0;
+  // 図の非同期完了でアンカーが再構築され、prewview の scrollTop がずれる可能性が
+  // あるための後始末。ただし自分より新しい切替が既に走っていたら(generation不一致)
+  // その切替のプレビューを上書きしないよう再適用はスキップする。スクロール同期の
+  // 再開(resumeScrollSync)は suspend とペアで必ず呼ぶ(カウント方式のため)。
+  void renderDone.then(() => {
+    if (generation === scrollRestoreGeneration) {
+      preview.paneEl.scrollTop = scroll?.preview ?? 0;
+    }
     resumeScrollSync();
   });
   syncStatusbarFromView();
@@ -198,7 +217,11 @@ function activateTab(id: number): void {
 
 async function closeTab(id: number): Promise<void> {
   if (store.isDirty(id)) {
-    const ok = window.confirm("保存されていない変更があります。破棄してタブを閉じますか?");
+    // window.confirm は Tauri 実機(wry)では表示されず素通りするため使わない(ui/dialogs.ts 参照)
+    const ok = await confirmDialog(
+      "保存されていない変更があります。破棄してタブを閉じますか?",
+      "タブを閉じる",
+    );
     if (!ok) return;
   }
   const previousId = store.activeDoc().id;
@@ -213,6 +236,32 @@ async function closeTab(id: number): Promise<void> {
   }
 }
 
+// ウィンドウの✕ボタンでは Ctrl+W と違って確認なしに閉じてしまう(未保存データが
+// 無言で消える)ため、Tauri 実機は onCloseRequested、ブラウザプレビューは
+// beforeunload でそれぞれガードする。両方登録すると実機で確認が二重に出るため分岐する。
+if (isTauri()) {
+  // onCloseRequested は async ハンドラの解決を待ってから destroy を判断するため、
+  // plugin-dialog の confirm を await してから preventDefault できる(公式の推奨パターン)。
+  // window.confirm は実機(wry)では表示されず素通りする(ui/dialogs.ts 参照)。
+  void getCurrentWindow().onCloseRequested(async (event) => {
+    if (!store.hasDirty()) return;
+    const ok = await confirmDialog(
+      "保存されていない変更があります。保存せずにアプリを終了しますか?",
+      "アプリを終了",
+    );
+    if (!ok) event.preventDefault();
+  });
+} else {
+  // beforeunload 内での window.confirm は主要ブラウザが無視するため使えない。
+  // 標準の作法どおり preventDefault + returnValue でブラウザ既定の確認ダイアログに委ねる
+  // (文言はセキュリティ上の理由で主要ブラウザが独自メッセージに差し替える)。
+  window.addEventListener("beforeunload", (event) => {
+    if (!store.hasDirty()) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
+}
+
 // ---------------------------------------------------------------------------
 // 保管庫(フォルダを開いてファイルツリーから編集対象を選ぶ)
 // ---------------------------------------------------------------------------
@@ -221,20 +270,32 @@ let vaultPath: string | undefined;
 const fileTree = createFileTree(document.getElementById("file-tree")!, (path) => {
   openFileInTab(path).catch((err) => {
     console.error("ファイルを開けませんでした:", path, err);
-    window.alert(`ファイルを開けませんでした:\n${path}\n\n${err}`);
+    void alertDialog(`ファイルを開けませんでした:\n${path}\n\n${err}`, "エラー");
   });
 });
 
-/** readDir を再帰的に呼んでツリーの素材を集める(ドット始まりのフォルダには潜らない) */
-async function walkDir(path: string): Promise<RawEntry[]> {
-  const entries = await readDir(path);
+/**
+ * readDir を再帰的に呼んでツリーの素材を集める(ドット始まりのフォルダには潜らない)。
+ * サブフォルダの readDir が失敗しても(アクセス拒否等)そのフォルダをスキップして
+ * 残りは表示する。深さ上限(MAX_VAULT_DEPTH)を超えたら潜らずに空扱いにする
+ * (Windows のジャンクション/シンボリックリンクの循環で無限再帰しないための安全弁)。
+ */
+async function walkDir(path: string, depth = 0): Promise<RawEntry[]> {
+  if (exceedsMaxVaultDepth(depth)) return [];
+  let entries: Awaited<ReturnType<typeof readDir>>;
+  try {
+    entries = await readDir(path);
+  } catch (err) {
+    console.error("フォルダを読み込めませんでした(スキップします):", path, err);
+    return [];
+  }
   return Promise.all(
     entries.map(async (e): Promise<RawEntry> => {
       if (e.isDirectory && !e.name.startsWith(".")) {
         return {
           name: e.name,
           isDirectory: true,
-          children: await walkDir(joinPath(path, e.name)),
+          children: await walkDir(joinPath(path, e.name), depth + 1),
         };
       }
       return { name: e.name, isDirectory: e.isDirectory };
@@ -244,16 +305,21 @@ async function walkDir(path: string): Promise<RawEntry[]> {
 
 async function refreshVault(): Promise<void> {
   if (!vaultPath) return;
-  const entries = await walkDir(vaultPath);
-  const tree = buildVaultTree(vaultPath, entries);
-  fileTree.setTree(tree);
-  fileTree.setActivePath(store.activeDoc().path);
-  vaultNameEl.textContent = basename(vaultPath);
-  vaultNameEl.title = vaultPath;
-  const fileCount = countFiles(tree);
-  vaultFileCountEl.textContent = `${fileCount} ファイル`;
-  statusbar.setVaultName(basename(vaultPath));
-  sidebarEl.hidden = false;
+  try {
+    const entries = await walkDir(vaultPath);
+    const tree = buildVaultTree(vaultPath, entries);
+    fileTree.setTree(tree);
+    fileTree.setActivePath(store.activeDoc().path);
+    vaultNameEl.textContent = basename(vaultPath);
+    vaultNameEl.title = vaultPath;
+    const fileCount = countFiles(tree);
+    vaultFileCountEl.textContent = `${fileCount} ファイル`;
+    statusbar.setVaultName(basename(vaultPath));
+    sidebarEl.hidden = false;
+  } catch (err) {
+    console.error("保管庫を読み込めませんでした:", vaultPath, err);
+    await alertDialog(`保管庫を読み込めませんでした:\n${vaultPath}\n\n${err}`, "エラー");
+  }
 }
 
 async function doOpenFolder(): Promise<void> {

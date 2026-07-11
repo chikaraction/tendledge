@@ -9,17 +9,22 @@ export interface ScrollSyncController {
    * 切替中は setState でエディタの内容が変わる一方、プレビューはまだ古いタブの
    * アンカーのまま(re-render が非同期で後から追いつく)なので、その間に
    * スクロールイベントが飛ぶと片方の内容量でもう片方を誤った位置へ動かしてしまう。
+   *
+   * カウント方式: suspend() を呼ぶたびに内部カウンタが +1 され、返す resume 関数は
+   * それぞれ自分の呼び出し分だけ -1 する。素早い連続タブ切替(A→B→C)で
+   * B の resume が C の切替中に呼ばれても、カウンタが 0 に戻るまで同期は
+   * 再開しない(古い呼び出しが新しい suspend を誤って解除しない)。
    */
   suspend(): () => void;
 }
 
 export function setupScrollSync(view: EditorView, preview: PreviewController): ScrollSyncController {
   let syncingScroll = false;
-  let suspended = false;
+  let suspendCount = 0;
 
   // 2つのスクロールリスナーが互いを再帰的に呼び合わないためのガード。
   function withScrollGuard(fn: () => void): void {
-    if (syncingScroll || suspended) return;
+    if (syncingScroll || suspendCount > 0) return;
     syncingScroll = true;
     fn();
     const release = () => {
@@ -47,9 +52,12 @@ export function setupScrollSync(view: EditorView, preview: PreviewController): S
 
   return {
     suspend() {
-      suspended = true;
+      suspendCount += 1;
+      let resumed = false;
       return () => {
-        suspended = false;
+        if (resumed) return; // 同じ resume を二重に呼んでもカウンタを壊さない
+        resumed = true;
+        suspendCount -= 1;
       };
     },
   };

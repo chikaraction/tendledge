@@ -20,6 +20,12 @@ export function setupDivider(workspace: HTMLElement, divider: HTMLElement): void
       const gutterWidth = parseFloat(
         getComputedStyle(document.documentElement).getPropertyValue("--editor-gutter-width"),
       );
+      // 分母(ガターを除いたコンテンツ幅)が極端に小さい/0以下だと ratio が
+      // NaN や Infinity になり --editor-ratio に不正値が入ってレイアウトが壊れる。
+      // ウィンドウの最小サイズ(tauri.conf.json)である程度は防げるが、念のため
+      // ここでも早期リターンで守る。
+      const MIN_CONTENT_WIDTH_FOR_RATIO = 50;
+      if (contentWidth - gutterWidth < MIN_CONTENT_WIDTH_FOR_RATIO) return;
       const editorPaneWidth = ev.clientX - contentLeft;
       const ratio = Math.min(
         0.8,
