@@ -153,6 +153,11 @@ function updateTabs(): void {
   tabOverflow.update();
 }
 
+// 素早い連続タブ切替(A→B→C)で、後から解決した古い .then() が新しいタブの
+// プレビュー scrollTop を上書きしてしまわないためのガード。switchEditorTo が
+// 呼ばれるたびに進み、.then() 側は「自分が最新の切替か」をこれで確認する。
+let scrollRestoreGeneration = 0;
+
 /** アクティブタブの EditorState を退避してから、指定タブの状態に切り替える */
 function switchEditorTo(id: number, previousId?: number): void {
   // 切替の間はスクロール同期を止める。setState でエディタの内容量が変わると
@@ -179,10 +184,22 @@ function switchEditorTo(id: number, previousId?: number): void {
   view.focus();
   const scroll = tabScrollTops.get(id);
   view.scrollDOM.scrollTop = scroll?.editor ?? 0;
-  // プレビューは描画完了で内容が入れ替わってから位置を戻す(未退避のタブは先頭)。
-  // 両ペインの位置が確定してから同期を再開する。
-  void preview.render(view.state.doc.toString()).then(() => {
-    preview.paneEl.scrollTop = scroll?.preview ?? 0;
+  // render() の innerHTML 差し替え自体は同期実行される(mermaid/Kroki の非同期完了を
+  // 待つ必要があるのは decorateDiagrams だけ)。呼び出し直後に scrollTop を復元すれば、
+  // 新しいタブのアンカーに対して正しい位置が決まる。.then() まで待つと、素早い連続切替
+  // (A→B→C)で後発の解決が先発を追い越し、表示中のタブに別タブの位置を適用してしまう
+  // 競合があったため、同期復元を主経路にした。
+  const generation = ++scrollRestoreGeneration;
+  const renderDone = preview.render(view.state.doc.toString());
+  preview.paneEl.scrollTop = scroll?.preview ?? 0;
+  // 図の非同期完了でアンカーが再構築され、prewview の scrollTop がずれる可能性が
+  // あるための後始末。ただし自分より新しい切替が既に走っていたら(generation不一致)
+  // その切替のプレビューを上書きしないよう再適用はスキップする。スクロール同期の
+  // 再開(resumeScrollSync)は suspend とペアで必ず呼ぶ(カウント方式のため)。
+  void renderDone.then(() => {
+    if (generation === scrollRestoreGeneration) {
+      preview.paneEl.scrollTop = scroll?.preview ?? 0;
+    }
     resumeScrollSync();
   });
   syncStatusbarFromView();
