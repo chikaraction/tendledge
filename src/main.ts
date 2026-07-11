@@ -446,15 +446,18 @@ async function doSaveAs(): Promise<void> {
 // HTML / PDF エクスポート
 // ---------------------------------------------------------------------------
 async function exportHtml(): Promise<void> {
-  const html = await buildExportHtml(view.state.doc.toString(), {
-    enabled: currentSettings.krokiEnabled,
-    serverUrl: currentSettings.krokiServerUrl,
-  });
+  // 保存先ダイアログを先に出す。buildExportHtml は Kroki 有効時に文書内容を
+  // 外部サーバーへ送信するため、キャンセル時に送信が発生しないよう
+  // 「パスが決まってから生成する」順序にしている。
   const path = await save({
     filters: [{ name: "HTML", extensions: ["html"] }],
     defaultPath: suggestedExportName(store.activeDoc().path, "html"),
   });
   if (!path) return;
+  const html = await buildExportHtml(view.state.doc.toString(), {
+    enabled: currentSettings.krokiEnabled,
+    serverUrl: currentSettings.krokiServerUrl,
+  });
   await writeTextFile(path, html);
 }
 
