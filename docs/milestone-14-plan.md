@@ -134,6 +134,32 @@ Windows のジャンクション/シンボリックリンクが自己参照す�
 4. #4 `ui/shortcuts.ts` の AltGr/Shift ガード
 5. #5 ウィンドウ最小サイズ + divider 分母ガード
 
+## 実機確認で発覚した問題と対処(2026-07-11 追記)
+
+**症状**: 実機(`npm run tauri dev`)で、(1) dirty タブの✕ボタンで確認ダイアログが
+出ずにタブが閉じる、(2) ウィンドウの✕ボタンでも確認が出ずにアプリが終了する。
+
+**原因**: Tauri 実機(WebView2/wry)では `window.confirm` / `window.alert` が
+ダイアログを表示せず**サイレントに素通りする**(wry が JS ネイティブダイアログ未実装)。
+ブラウザプレビューでは普通に動くため、実機確認まで発覚しなかった。
+`closeTab` の confirm は M14 以前からの潜在バグ、`onCloseRequested` 内の confirm は
+#1 で追加した分、ほかに `openFileInTab` / `refreshVault` 失敗時の `window.alert` も
+同罪(計4箇所)。
+
+**対処**: `src/ui/dialogs.ts` を新設し、`confirmDialog` / `alertDialog` に集約した。
+`isTauri()` で分岐し、実機は `@tauri-apps/plugin-dialog` の `confirm` / `message`
+(OS ネイティブダイアログ)、ブラウザプレビューは従来の `window.confirm` /
+`window.alert` にフォールバックする。`onCloseRequested` はハンドラを async にして
+`await confirmDialog(...)` → キャンセルなら `preventDefault()`(onCloseRequested は
+async ハンドラの解決を待ってから destroy を判断するため、この形が公式ドキュメントの
+推奨パターン)。
+
+**パーミッション**: `dialog:default` に含まれるのは `allow-message` / `allow-save` /
+`allow-open` のみで **`allow-confirm` は含まれない**(インストール済み
+`tauri-plugin-dialog-2.7.1` crate の `permissions/default.toml` と
+`gen/schemas/desktop-schema.json` で確認)。`capabilities/default.json` に
+`dialog:allow-confirm` を追加した。`message` は default に含まれるため追加不要。
+
 ## 検証方法
 
 - `npm test` / `npm run build` を各コミット前に実行(基準: 既存 233 件 + 本 M14 での追加分が

@@ -25,6 +25,7 @@ import {
 } from "./core/view-mode";
 import { buildVaultTree, countFiles, exceedsMaxVaultDepth, type RawEntry } from "./core/vault-tree";
 import { sampleDoc } from "./sample-doc";
+import { alertDialog, confirmDialog } from "./ui/dialogs";
 import { setupDivider } from "./ui/divider";
 import { createEditor, editorScrollToLine, editorTopLine, openEditorSearch } from "./ui/editor";
 import { createFileTree } from "./ui/file-tree";
@@ -216,7 +217,11 @@ function activateTab(id: number): void {
 
 async function closeTab(id: number): Promise<void> {
   if (store.isDirty(id)) {
-    const ok = window.confirm("保存されていない変更があります。破棄してタブを閉じますか?");
+    // window.confirm は Tauri 実機(wry)では表示されず素通りするため使わない(ui/dialogs.ts 参照)
+    const ok = await confirmDialog(
+      "保存されていない変更があります。破棄してタブを閉じますか?",
+      "タブを閉じる",
+    );
     if (!ok) return;
   }
   const previousId = store.activeDoc().id;
@@ -235,10 +240,14 @@ async function closeTab(id: number): Promise<void> {
 // 無言で消える)ため、Tauri 実機は onCloseRequested、ブラウザプレビューは
 // beforeunload でそれぞれガードする。両方登録すると実機で確認が二重に出るため分岐する。
 if (isTauri()) {
-  void getCurrentWindow().onCloseRequested((event) => {
+  // onCloseRequested は async ハンドラの解決を待ってから destroy を判断するため、
+  // plugin-dialog の confirm を await してから preventDefault できる(公式の推奨パターン)。
+  // window.confirm は実機(wry)では表示されず素通りする(ui/dialogs.ts 参照)。
+  void getCurrentWindow().onCloseRequested(async (event) => {
     if (!store.hasDirty()) return;
-    const ok = window.confirm(
+    const ok = await confirmDialog(
       "保存されていない変更があります。保存せずにアプリを終了しますか?",
+      "アプリを終了",
     );
     if (!ok) event.preventDefault();
   });
@@ -261,7 +270,7 @@ let vaultPath: string | undefined;
 const fileTree = createFileTree(document.getElementById("file-tree")!, (path) => {
   openFileInTab(path).catch((err) => {
     console.error("ファイルを開けませんでした:", path, err);
-    window.alert(`ファイルを開けませんでした:\n${path}\n\n${err}`);
+    void alertDialog(`ファイルを開けませんでした:\n${path}\n\n${err}`, "エラー");
   });
 });
 
@@ -309,7 +318,7 @@ async function refreshVault(): Promise<void> {
     sidebarEl.hidden = false;
   } catch (err) {
     console.error("保管庫を読み込めませんでした:", vaultPath, err);
-    window.alert(`保管庫を読み込めませんでした:\n${vaultPath}\n\n${err}`);
+    await alertDialog(`保管庫を読み込めませんでした:\n${vaultPath}\n\n${err}`, "エラー");
   }
 }
 

@@ -15,6 +15,7 @@
       "allow": ["**"]
     },
     "dialog:default",
+    "dialog:allow-confirm",
     "store:default",
     "window-state:default",
     {
