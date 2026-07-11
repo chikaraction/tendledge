@@ -159,3 +159,11 @@ Vite のみのブラウザプレビューでは Tauri API(fs / dialog / store)�
       相当のキー入力をしても Ctrl+F の検索パネルが誤って開かない
       (手元で再現できなければ、`e.ctrlKey && e.altKey` が実際に届くことを
       DevTools の keydown ログで確認できれば代替可)
+
+### セキュリティ強化(M15)
+- [ ] 起動後、WebView の DevTools コンソールで `window.__TAURI__` が `undefined`
+      になっている(`withGlobalTauri: false` が効いていることの確認)
+- [ ] 上記にかかわらず、ファイル I/O・保管庫・設定永続化・エクスポート・図(Mermaid/Kroki)
+      が従来通りすべて動作する(`__TAURI__` 無効化による機能退行がないことの回帰確認。
+      本ミルストーンは設定変更のみでロジック変更を伴わないため、他セクションの
+      再確認で代替してよい)
