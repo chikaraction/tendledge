@@ -115,10 +115,14 @@ const editor = createEditor({
   parent: document.getElementById("editor-pane")!,
   doc: sampleDoc,
   onDocChanged: (doc) => {
-    store.updateContent(store.activeDoc().id, doc);
+    // タブバーの全再構築(renderTabs + tabOverflow.update の強制レイアウト)は
+    // dirty ドットの表示が変わるとき(dirty 状態遷移)だけ必要。入力のたびに
+    // 呼ぶとキーストローク毎に無駄な再描画が走るため、更新有無を updateContent の
+    // 戻り値で判定する。
+    const dirtyChanged = store.updateContent(store.activeDoc().id, doc);
     preview.scheduleRender(doc);
     statusbar.setDocText(doc);
-    updateTabs();
+    if (dirtyChanged) updateTabs();
   },
   onCursorChanged: (line, col) => statusbar.setCursor(line, col),
 });

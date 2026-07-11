@@ -31,8 +31,11 @@ export interface DocumentStore {
   openUntitled(): DocumentInfo;
   /** ファイルをタブとして開く。同じ path が開いていれば既存タブをアクティブ化する */
   openFile(path: string, content: string): OpenFileResult;
-  /** エディタでの編集内容を反映する(dirty 判定が更新される) */
-  updateContent(id: number, content: string): void;
+  /**
+   * エディタでの編集内容を反映する(dirty 判定が更新される)。
+   * 戻り値は「呼び出し前後で isDirty が変化したか」(タブバー再描画の要否判定に使う)。
+   */
+  updateContent(id: number, content: string): boolean;
   /** 保存を記録する。path を渡すと「名前を付けて保存」(Untitled → パス付き) */
   markSaved(id: number, content: string, path?: string): void;
   activate(id: number): void;
@@ -102,7 +105,11 @@ export function createDocumentStore(opts: { initialContent: string }): DocumentS
     },
     updateContent(id, content) {
       const doc = find(id);
-      if (doc) doc.content = content;
+      if (!doc) return false;
+      const wasDirty = doc.content !== doc.lastSavedContent;
+      doc.content = content;
+      const isDirtyNow = doc.content !== doc.lastSavedContent;
+      return wasDirty !== isDirtyNow;
     },
     markSaved(id, content, path) {
       const doc = find(id);
