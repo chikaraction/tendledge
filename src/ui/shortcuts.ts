@@ -34,7 +34,10 @@ export function setupShortcuts(handlers: ShortcutHandlers): void {
   }
 
   window.addEventListener("keydown", (e) => {
-    if (!e.ctrlKey) {
+    // e.altKey も見て除外するのは、Windows では AltGr+キー(欧州系レイアウトで文字入力に
+    // 使われる)が ctrlKey: true, altKey: true として届くため。これを弾かないと
+    // 例えば AltGr+F で Ctrl+F 相当が誤発火し、文字入力を潰してしまう。
+    if (!e.ctrlKey || e.altKey) {
       resetChord();
       return;
     }
@@ -80,7 +83,7 @@ export function setupShortcuts(handlers: ShortcutHandlers): void {
     } else if (key === "v" && e.shiftKey) {
       e.preventDefault();
       handlers.onTogglePreview();
-    } else if (key === "f") {
+    } else if (key === "f" && !e.shiftKey) {
       if (handlers.onFind()) {
         e.preventDefault();
       }
