@@ -419,11 +419,31 @@ body {
   flex-direction: column;
   min-height: 0;
   background: var(--bg-raised);
-  border-right: 1px solid var(--border);
   user-select: none;
 }
 
 #sidebar[hidden] {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   サイドバー分割線(サイドバー幅のドラッグリサイズ)
+--------------------------------------------------------------------------- */
+#sidebar-divider {
+  flex: none;
+  width: 5px;
+  cursor: col-resize;
+  background: var(--border);
+  transition: background 0.15s;
+  touch-action: none;
+}
+
+#sidebar-divider:hover {
+  background: var(--accent);
+}
+
+/* サイドバー非表示時は分割線も隠す(境界線代わりの5px なので単独では意味がない) */
+#sidebar[hidden] + #sidebar-divider {
   display: none;
 }
 
@@ -1098,6 +1118,7 @@ body {
   #menubar-row,
   #tabbar,
   #sidebar,
+  #sidebar-divider,
   #statusbar,
   #divider,
   #editor-pane {

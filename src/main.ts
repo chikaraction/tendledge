@@ -35,6 +35,7 @@ import { createMenubar } from "./ui/menubar";
 import { createPreview } from "./ui/preview";
 import { setupPreviewLinks } from "./ui/preview-links";
 import { setupScrollSync } from "./ui/scroll-sync";
+import { setupSidebarDivider } from "./ui/sidebar-divider";
 import {
   createSettingsDialog,
   loadSettings,
@@ -340,6 +341,10 @@ updateTabs();
 view.focus();
 
 setupDivider(document.getElementById("workspace")!, document.getElementById("divider")!);
+setupSidebarDivider(
+  document.getElementById("workspace")!,
+  document.getElementById("sidebar-divider")!,
+);
 const scrollSync = setupScrollSync(view, preview);
 
 // ---------------------------------------------------------------------------
