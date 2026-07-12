@@ -7,7 +7,7 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { readDir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { type MermaidTheme, resolveMermaidTheme } from "./core/diagram";
-import { createDocumentStore } from "./core/documents";
+import { createDocumentStore, documentLabel } from "./core/documents";
 import { basename, joinPath, suggestedExportName } from "./core/paths";
 import { resolveImagePath } from "./core/preview-links";
 import {
@@ -143,7 +143,7 @@ const tabOverflow = setupTabOverflow(
   () =>
     store.list().map((d) => ({
       id: d.id,
-      label: d.path ? basename(d.path) : "Untitled",
+      label: documentLabel(d),
       active: d.id === store.activeDoc().id,
       dirty: store.isDirty(d.id),
     })),

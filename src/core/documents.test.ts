@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDocumentStore } from "./documents";
+import { createDocumentStore, documentLabel } from "./documents";
 
 describe("createDocumentStore: タブ = ドキュメントの状態管理", () => {
   describe("初期状態", () => {
@@ -218,5 +218,19 @@ describe("createDocumentStore: タブ = ドキュメントの状態管理", () =
       store.activateNext();
       expect(store.activeDoc().id).toBe(only.id);
     });
+  });
+});
+
+describe("documentLabel: タブ表示用ラベル", () => {
+  it("path があればファイル名(basename)を返す(バックスラッシュ区切り)", () => {
+    expect(documentLabel({ path: "C:\\docs\\a.adoc" })).toBe("a.adoc");
+  });
+
+  it("path があればファイル名(basename)を返す(スラッシュ区切り)", () => {
+    expect(documentLabel({ path: "/x/y.adoc" })).toBe("y.adoc");
+  });
+
+  it("path が undefined なら Untitled を返す", () => {
+    expect(documentLabel({ path: undefined })).toBe("Untitled");
   });
 });
