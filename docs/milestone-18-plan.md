@@ -32,6 +32,9 @@ export const MAX_SIDEBAR_RATIO = 0.4;
 /** エディタ+プレビュー側に最低限残すコンテンツ幅 */
 export const MIN_CONTENT_WIDTH = 200;
 
+/** サイドバー幅をウィンドウ幅に応じた範囲へクランプ(リサイズ時の再クランプにも使う) */
+export function clampSidebarWidth(width: number, workspaceWidth: number): number;
+
 /** ポインタの clientX からクランプ済みのサイドバー幅(px)を返す */
 export function sidebarWidthForPointer(
   pointerX: number,
@@ -51,6 +54,9 @@ export function sidebarWidthForPointer(
   (エディタ/プレビュー側を潰さない)
 - その動的上限が `MIN_SIDEBAR_WIDTH` を下回るほど極端に狭い場合は
   `MIN_SIDEBAR_WIDTH` を返す(min 優先 — 不正な負値や 0 を返さない)
+- ウィンドウを縮めた後は保持中の幅を新しい上限へ収める(`clampSidebarWidth` —
+  広げた幅を持ち越すとサイドバーがウィンドウの大半を占めたままになり、
+  次のドラッグ開始時に一瞬で上限まで飛ぶ。実装後のフィードバックで追加)
 
 ## 2. 分割線の DOM・スタイル・ドラッグ配線
 
@@ -89,6 +95,10 @@ divider.ts と同じパターン: `pointerdown` で `setPointerCapture` →
 `sidebarWidthForPointer(ev.clientX, rect.left, rect.width)` を呼び、
 `workspace.style.setProperty("--sidebar-width", `${width}px`)` で反映 →
 `pointerup` でリスナー解除。判断ロジックは core 側にあるので ui は配線のみ。
+
+加えて `ResizeObserver` でワークスペースを監視し、リサイズの度に保持中の
+インライン `--sidebar-width` を `clampSidebarWidth` で再クランプする
+(未ドラッグならインライン値が無いのでスキップ — 既定値 220px は常に範囲内)。
 
 ```ts
 export function setupSidebarDivider(workspace: HTMLElement, divider: HTMLElement): void;

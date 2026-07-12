@@ -9,13 +9,11 @@ export const MAX_SIDEBAR_RATIO = 0.4;
 /** エディタ+プレビュー側に最低限残すコンテンツ幅 */
 export const MIN_CONTENT_WIDTH = 200;
 
-/** ポインタの clientX からクランプ済みのサイドバー幅(px)を返す */
-export function sidebarWidthForPointer(
-  pointerX: number,
-  workspaceLeft: number,
-  workspaceWidth: number,
-): number {
-  const raw = pointerX - workspaceLeft;
+/** サイドバー幅(px)をウィンドウ幅に応じた範囲へクランプして返す。
+    ドラッグ中だけでなく、ウィンドウリサイズ時の再クランプにも使う
+    (広げた幅を持ち越したままだと上限超えの状態が残り、
+    次のドラッグ開始時に一瞬で上限まで飛んでしまう) */
+export function clampSidebarWidth(width: number, workspaceWidth: number): number {
   // 上限は「500px とウィンドウ幅の40%の大きい方」。ただしウィンドウが狭いときは
   // エディタ/プレビュー側を潰さないよう、コンテンツ領域の最低幅を差し引いた値を優先する
   const wideMax = Math.max(MAX_SIDEBAR_WIDTH, workspaceWidth * MAX_SIDEBAR_RATIO);
@@ -23,5 +21,14 @@ export function sidebarWidthForPointer(
   // 動的上限が MIN_SIDEBAR_WIDTH を下回るほど極端に狭い場合でも、
   // 負値や 0 を返さないよう MIN_SIDEBAR_WIDTH を優先する
   const upperBound = Math.max(dynamicMax, MIN_SIDEBAR_WIDTH);
-  return Math.min(upperBound, Math.max(MIN_SIDEBAR_WIDTH, raw));
+  return Math.min(upperBound, Math.max(MIN_SIDEBAR_WIDTH, width));
+}
+
+/** ポインタの clientX からクランプ済みのサイドバー幅(px)を返す */
+export function sidebarWidthForPointer(
+  pointerX: number,
+  workspaceLeft: number,
+  workspaceWidth: number,
+): number {
+  return clampSidebarWidth(pointerX - workspaceLeft, workspaceWidth);
 }

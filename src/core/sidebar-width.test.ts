@@ -1,11 +1,31 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampSidebarWidth,
   MAX_SIDEBAR_RATIO,
   MAX_SIDEBAR_WIDTH,
   MIN_CONTENT_WIDTH,
   MIN_SIDEBAR_WIDTH,
   sidebarWidthForPointer,
 } from "./sidebar-width";
+
+describe("clampSidebarWidth: サイドバー幅をウィンドウ幅に応じた範囲へ収める", () => {
+  it("範囲内の幅はそのまま返す", () => {
+    expect(clampSidebarWidth(300, 1000)).toBe(300);
+  });
+
+  it("ウィンドウを縮めた後は新しい上限へ収める(最大化時に広げた幅を持ち越さない)", () => {
+    // 1920px で 768px(40%)まで広げた後、1200px へ縮めると上限は max(500, 480) = 500
+    expect(clampSidebarWidth(768, 1200)).toBe(MAX_SIDEBAR_WIDTH);
+  });
+
+  it("広いウィンドウでは幅の40%が上限になる", () => {
+    expect(clampSidebarWidth(900, 2000)).toBe(2000 * MAX_SIDEBAR_RATIO);
+  });
+
+  it("MIN_SIDEBAR_WIDTH 未満は150に引き上げる", () => {
+    expect(clampSidebarWidth(100, 1000)).toBe(MIN_SIDEBAR_WIDTH);
+  });
+});
 
 describe("sidebarWidthForPointer: ドラッグ中のポインタ位置からサイドバー幅を求める", () => {
   it("ポインタ位置がそのまま幅になる(workspaceLeft からの相対値)", () => {
