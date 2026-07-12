@@ -27,6 +27,8 @@ roadmap.md の M18 節がスコープ定義、本書はその設計文書。
 ```ts
 export const MIN_SIDEBAR_WIDTH = 150;
 export const MAX_SIDEBAR_WIDTH = 500;
+/** 最大化などの広いウィンドウでは 500px 固定より広げたいので、幅の40%との大きい方を上限にする */
+export const MAX_SIDEBAR_RATIO = 0.4;
 /** エディタ+プレビュー側に最低限残すコンテンツ幅 */
 export const MIN_CONTENT_WIDTH = 200;
 
@@ -42,7 +44,9 @@ export function sidebarWidthForPointer(
 
 - ポインタ位置がそのまま幅になる(`workspaceLeft` からの相対値)
 - `MIN_SIDEBAR_WIDTH` 未満は 150 にクランプ(左へ引き切っても消えない)
-- `MAX_SIDEBAR_WIDTH` 超は 500 にクランプ
+- `MAX_SIDEBAR_WIDTH` 超は 500 にクランプ(ウィンドウ幅の40%が 500 を下回るとき)
+- 広いウィンドウではウィンドウ幅の40%まで広げられる(500 と 40% の大きい方が上限 —
+  最大化時に 500px 固定では相対的に狭すぎるため。実装後のフィードバックで追加)
 - ウィンドウが狭いときは `workspaceWidth - MIN_CONTENT_WIDTH` が上限になる
   (エディタ/プレビュー側を潰さない)
 - その動的上限が `MIN_SIDEBAR_WIDTH` を下回るほど極端に狭い場合は
