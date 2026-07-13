@@ -24,6 +24,7 @@ import {
   type ViewModeState,
 } from "./core/view-mode";
 import { buildVaultTree, countFiles, exceedsMaxVaultDepth, type RawEntry } from "./core/vault-tree";
+import { helpDoc } from "./help-doc";
 import { sampleDoc } from "./sample-doc";
 import { alertDialog, confirmDialog } from "./ui/dialogs";
 import { setupDivider } from "./ui/divider";
@@ -422,6 +423,14 @@ async function openFileInTab(path: string): Promise<void> {
   switchEditorTo(doc.id, previousId);
 }
 
+/** ヘルプ文書をタブとして開く(F1・メニュー「ヘルプ」→「ヘルプを開く」)。既に開いていれば既存タブへフォーカスする */
+function doOpenHelp(): void {
+  const previousId = store.activeDoc().id;
+  const { doc, alreadyOpen } = store.openHelp(helpDoc);
+  if (alreadyOpen && doc.id === previousId) return;
+  switchEditorTo(doc.id, previousId);
+}
+
 async function doSave(): Promise<void> {
   const active = store.activeDoc();
   if (!active.path) {
@@ -656,6 +665,11 @@ const menubar = createMenubar(document.getElementById("menubar")!, [
       },
     ],
   },
+  {
+    id: "help",
+    label: "ヘルプ",
+    entries: [{ label: "ヘルプを開く", shortcut: "F1", onSelect: doOpenHelp }],
+  },
 ]);
 
 void initSettings();
@@ -679,6 +693,7 @@ setupShortcuts({
   },
   onToggleSplit: () => applyViewMode(toggleSplit(viewModeState)),
   onTogglePreview: () => applyViewMode(togglePreview(viewModeState)),
+  onHelp: doOpenHelp,
   onFind: () => {
     // プレビューのみ表示中はエディタが非表示なので、ネイティブ検索バーに任せる。
     // それ以外(エディタ表示中)はプレビューにフォーカスがあっても検索パネルを開く。
