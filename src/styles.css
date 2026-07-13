@@ -1099,15 +1099,15 @@ body {
   padding-left: 0;
 }
 
+/* 本文リンク(.adoc a)と同じアクセント色にして、クリックで移動できることを示す */
 .adoc #toc a {
-  color: var(--fg);
+  color: var(--accent);
   text-decoration: none;
   display: inline-block;
   padding: 0.1em 0;
 }
 
 .adoc #toc a:hover {
-  color: var(--accent);
   text-decoration: underline;
 }
 
