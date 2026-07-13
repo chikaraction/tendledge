@@ -198,6 +198,6 @@ Vite のみのブラウザプレビューでは Tauri API(fs / dialog / store)�
 - [ ] ヘルプタブを編集して Ctrl+W → 通常タブと同じ破棄確認が出る。
       名前を付けて保存するとタブ名がファイル名になり、次の F1 は新しい
       ヘルプタブを開く
-- [ ] `npm run tauri build` の生成物(`src-tauri/target/release/` の
-      Tendledge.exe と bundle/ のインストーラ)が起動でき、タスクバー・
-      エクスプローラーのアイコンが緑の「本と芽」になっている
+- [ ] `npm run tauri build` の生成物(`src-tauri/target/release/tendledge.exe` と
+      bundle/ の `Tendledge_0.1.0_x64_en-US.msi` / `Tendledge_0.1.0_x64-setup.exe`)
+      が起動でき、タスクバー・エクスプローラーのアイコンが緑の「本と芽」になっている
