@@ -1,5 +1,6 @@
 = 表(テーブル)
 :author: AsciiDoc Editor
+:toc:
 
 == 基本の表
 

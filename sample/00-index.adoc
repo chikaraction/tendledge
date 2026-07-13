@@ -1,5 +1,6 @@
 = AsciiDoc 記法サンプル集
 :author: AsciiDoc Editor
+:toc:
 :doctype: article
 
 このフォルダには、AsciiDoc の記法を一通り確認できるサンプルファイルを

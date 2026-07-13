@@ -1,5 +1,6 @@
 = リンク・画像・相互参照・脚注
 :author: AsciiDoc Editor
+:toc:
 
 == リンク
 

@@ -1,5 +1,6 @@
 = 各種リスト
 :author: AsciiDoc Editor
+:toc:
 
 == 箇条書き(番号なしリスト)
 
