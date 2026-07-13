@@ -1068,9 +1068,47 @@ body {
   color: var(--fg-muted);
 }
 
+/* 目次(:toc:)はカンバンのカード風に本文から持ち上げる。
+   幅は内容に合わせる(fit-content)が、狭くなりすぎないよう最小幅を確保。
+   影はアプリ内で唯一の使用箇所: 本文と同じ面に置かれる目次を
+   「文書の一部ではなく付属物」として区別するための例外的な装飾 */
+.adoc #toc {
+  width: fit-content;
+  min-width: 14rem;
+  max-width: 100%;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1.2rem;
+  margin: 1em 0 1.5em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+}
+
+.adoc #toctitle {
+  font-weight: 700;
+  margin: 0 0 0.5em;
+}
+
 .adoc #toc ul {
   list-style: none;
+  margin: 0;
   padding-left: 1em;
+}
+
+.adoc #toc > ul {
+  padding-left: 0;
+}
+
+.adoc #toc a {
+  color: var(--fg);
+  text-decoration: none;
+  display: inline-block;
+  padding: 0.1em 0;
+}
+
+.adoc #toc a:hover {
+  color: var(--accent);
+  text-decoration: underline;
 }
 
 .adoc #footnotes .footnote {

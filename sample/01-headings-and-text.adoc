@@ -1,6 +1,11 @@
 = 見出しと段落・インライン文字装飾
 :author: AsciiDoc Editor
+:encoding: utf-8
+:lang: ja
 :toc:
+:toc-title: 目次
+:toclevels: 3
+:numbered:
 
 == 見出しレベル
 

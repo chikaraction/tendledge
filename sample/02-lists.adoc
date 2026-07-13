@@ -1,6 +1,9 @@
 = 各種リスト
 :author: AsciiDoc Editor
 :toc:
+:toc-title: 目次
+:toclevels: 3
+:numbered:
 
 == 箇条書き(番号なしリスト)
 

@@ -1,6 +1,9 @@
 = アドモニション・属性・コメント
 :author: AsciiDoc Editor
 :toc:
+:toc-title: 目次
+:toclevels: 3
+:numbered:
 :important-label: 重要
 
 // これはコメント行です。プレビューには出力されません。

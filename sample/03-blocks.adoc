@@ -1,6 +1,9 @@
 = ブロック要素
 :author: AsciiDoc Editor
 :toc:
+:toc-title: 目次
+:toclevels: 3
+:numbered:
 
 == コードブロック(リスティングブロック)
 
