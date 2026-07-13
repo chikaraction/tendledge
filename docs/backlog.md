@@ -21,6 +21,32 @@
 - M12(Kroki 経由の PlantUML / Draw.io)で図の種類が増えると需要も増える見込み。
   対応するならリモート図(`<img>`)とローカル図(inline SVG)の両方に効く設計にする。
 
+## HTML エクスポート時の `link:*.adoc` リンクを `.html` へ書き換え(出自: 2026-07-13 検討)
+
+- `xref:foo.adoc[]` / `<<foo.adoc#sec,…>>` は Asciidoctor の `outfilesuffix` により
+  既に `.html` へ自動変換される(実測確認済み)。問題は `link:` マクロだけで、
+  対象を素通しする仕様のため `.adoc` のまま出力される。
+- 対応方針: 「相対パスで `.adoc`(+`#fragment`)で終わる href を `.html` に
+  書き換える」純関数を `core/` に置いてテストで固定し、
+  `ui/html-export.ts` の `buildExportHtml` の後処理に組み込む。
+  `http(s):` 等の外部 URL は書き換えない。小規模(30分〜1時間)。
+- PDF(印刷)はライブプレビューを `window.print()` する方式のため本対応の範囲外。
+  制限として [export-notes.md](export-notes.md) に記載済み。ヘルプページ(下記)にも載せる。
+
+## アプリ内ヘルプページ(ショートカット一覧など)
+
+- キーボードショートカットの一覧を中心にした、アプリ内で参照できるヘルプを作る。
+- 既知の制限もここに載せる。まず1件:
+  PDF エクスポートでは `link:foo.adoc[]` のリンクが `.adoc` のまま残る
+  (文書間リンクは `xref:` 記法を推奨、詳細は [export-notes.md](export-notes.md))。
+
+## README の英語化(英語 README.md + 日本語 README.ja.md)
+
+- 現在の日本語 README を `README.ja.md` へ移し、英語版 `README.md` を新規に書く
+  (GitHub に閲覧者の言語で自動切り替えする機能はないため、この2ファイル構成が定番)。
+- 両ファイルの冒頭に相互リンクを付ける: `[English](README.md) | [日本語](README.ja.md)`
+- M19 のリブランディング(名称反映で README も触る)と同時期にやると二度手間がない。
+
 ## ドロップダウン開閉配線の共通化(出自: M17 #3・3例目が現れたら)
 
 - `core/menu.ts` の状態機械の実質的な価値は「複数メニュー間のホバー切り替え」。
