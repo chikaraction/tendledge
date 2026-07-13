@@ -1,5 +1,5 @@
 = ブロック要素
-:author: AsciiDoc Editor
+:author: Tendledge
 :toc:
 :toc-title: 目次
 :toclevels: 3
@@ -33,7 +33,7 @@ fn main() {
 [source,json]
 ----
 {
-  "name": "AsciiDoc Editor",
+  "name": "Tendledge",
   "milestone": 10
 }
 ----

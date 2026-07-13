@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Tauri v2 desktop app: an AsciiDoc editor with live preview, built on CodeMirror 6 (editor) and Asciidoctor.js (renderer). Frontend is TypeScript/Vite, native shell is Rust. Milestones 1–7 are implemented (editor/preview, resizable panes, highlighting, file I/O, scroll sync, HTML/PDF export, tabs, vault sidebar, settings, Slate UI with menubar/statusbar). The long-term goal is an Obsidian-like experience; new features are added incrementally — no plugin system planned. **UI work must follow [docs/design-direction.md](docs/design-direction.md)** (Slate tokens, skeleton decisions, Lucide icons — includes the ADR for why Sparkle was rejected). Milestone 6's design doc is [docs/milestone-6-plan.md](docs/milestone-6-plan.md).
+Tauri v2 desktop app: an AsciiDoc editor with live preview, built on CodeMirror 6 (editor) and Asciidoctor.js (renderer). The product name is **Tendledge** (identifier: `io.github.chikaraction.tendledge`). Frontend is TypeScript/Vite, native shell is Rust. Milestones 1–7 are implemented (editor/preview, resizable panes, highlighting, file I/O, scroll sync, HTML/PDF export, tabs, vault sidebar, settings, Slate UI with menubar/statusbar). The long-term goal is an Obsidian-like experience; new features are added incrementally — no plugin system planned. **UI work must follow [docs/design-direction.md](docs/design-direction.md)** (Slate tokens, skeleton decisions, Lucide icons — includes the ADR for why Sparkle was rejected). Milestone 6's design doc is [docs/milestone-6-plan.md](docs/milestone-6-plan.md).
 
 Comments, commit-facing docs, and UI strings in this repo are written in Japanese — match that convention when editing existing files.
 

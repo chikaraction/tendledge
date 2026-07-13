@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "asciidoc-editor",
+  "productName": "Tendledge",
   "version": "0.1.0",
-  "identifier": "com.example.asciidoc-editor",
+  "identifier": "io.github.chikaraction.tendledge",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "withGlobalTauri": false,
     "windows": [
       {
-        "title": "asciidoc-editor",
+        "title": "Tendledge",
         "width": 800,
         "height": 600,
         "minWidth": 480,

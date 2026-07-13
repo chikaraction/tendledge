@@ -1,5 +1,5 @@
 = 作図(PlantUML・Kroki 経由)
-:author: AsciiDoc Editor
+:author: Tendledge
 :toc:
 :toc-title: 目次
 :toclevels: 3
