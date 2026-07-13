@@ -48,6 +48,8 @@ const BASE_ATTRIBUTES = {
   // 日本語に差し替える(例: "例 1. タイトル" / "表 1. タイトル")
   "example-caption": "例",
   "table-caption": "表",
+  // :toc: を書いた文書の目次見出し("Table of Contents" が英語で付く)も日本語化
+  "toc-title": "目次",
 };
 
 /** プレビュー用の HTML 断片に変換する。 */
