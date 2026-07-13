@@ -143,7 +143,11 @@ export function createDocumentStore(opts: { initialContent: string }): DocumentS
       if (!doc) return;
       doc.content = content;
       doc.lastSavedContent = content;
-      if (path !== undefined) doc.path = path;
+      if (path !== undefined) {
+        // ファイルへ昇格したらヘルプ扱いを外す(ラベルをファイル名にし、次の openHelp は新規タブを作る)
+        doc.path = path;
+        doc.kind = undefined;
+      }
     },
     activate(id) {
       if (find(id)) activeId = id;

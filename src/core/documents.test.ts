@@ -103,6 +103,17 @@ describe("createDocumentStore: タブ = ドキュメントの状態管理", () =
       expect(second.alreadyOpen).toBe(false);
       expect(second.doc.id).not.toBe(first.doc.id);
     });
+
+    it("名前を付けて保存したヘルプタブは通常のファイルタブになる", () => {
+      const store = createDocumentStore({ initialContent: "" });
+      const first = store.openHelp("= ヘルプ本文");
+      store.markSaved(first.doc.id, "= ヘルプ本文", "C:/notes/help-copy.adoc");
+      // ラベルはファイル名になり、以後の openHelp はこのタブに吸われず新規タブを作る
+      expect(documentLabel(store.activeDoc())).toBe("help-copy.adoc");
+      const second = store.openHelp("= ヘルプ本文");
+      expect(second.alreadyOpen).toBe(false);
+      expect(second.doc.id).not.toBe(first.doc.id);
+    });
   });
 
   describe("dirty 判定", () => {
