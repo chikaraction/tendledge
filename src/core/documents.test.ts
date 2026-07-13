@@ -58,6 +58,53 @@ describe("createDocumentStore: タブ = ドキュメントの状態管理", () =
     });
   });
 
+  describe("openHelp: ヘルプ文書を開く", () => {
+    it("新規タブが末尾に追加されアクティブになる。ラベルは「ヘルプ」", () => {
+      const store = createDocumentStore({ initialContent: "" });
+      const { doc, alreadyOpen } = store.openHelp("= ヘルプ本文");
+      expect(alreadyOpen).toBe(false);
+      expect(store.list()).toHaveLength(2);
+      expect(store.list()[1].id).toBe(doc.id);
+      expect(store.activeDoc().id).toBe(doc.id);
+      expect(documentLabel(doc)).toBe("ヘルプ");
+    });
+
+    it("開いた直後は dirty ではない(サンプル文書と同じ保存済み扱い)", () => {
+      const store = createDocumentStore({ initialContent: "" });
+      const { doc } = store.openHelp("= ヘルプ本文");
+      expect(store.isDirty(doc.id)).toBe(false);
+    });
+
+    it("既にヘルプタブがあれば新規タブを作らず既存タブをアクティブ化する", () => {
+      const store = createDocumentStore({ initialContent: "" });
+      const first = store.openHelp("= ヘルプ本文");
+      store.openUntitled(); // 別のタブに切り替えておく
+      const second = store.openHelp("= ヘルプ本文");
+      expect(second.alreadyOpen).toBe(true);
+      expect(second.doc.id).toBe(first.doc.id);
+      expect(store.activeDoc().id).toBe(first.doc.id);
+      expect(store.list()).toHaveLength(3); // 初期 + ヘルプ + Untitled
+    });
+
+    it("編集済みのヘルプタブを再オープンしても内容はリセットされない", () => {
+      const store = createDocumentStore({ initialContent: "" });
+      const first = store.openHelp("= ヘルプ本文");
+      store.updateContent(first.doc.id, "編集済みヘルプ");
+      const second = store.openHelp("= ヘルプ本文");
+      expect(second.alreadyOpen).toBe(true);
+      expect(store.activeDoc().content).toBe("編集済みヘルプ");
+    });
+
+    it("ヘルプタブを閉じた後は再度開ける(新規タブとして)", () => {
+      const store = createDocumentStore({ initialContent: "" });
+      const first = store.openHelp("= ヘルプ本文");
+      store.close(first.doc.id);
+      const second = store.openHelp("= ヘルプ本文");
+      expect(second.alreadyOpen).toBe(false);
+      expect(second.doc.id).not.toBe(first.doc.id);
+    });
+  });
+
   describe("dirty 判定", () => {
     it("内容が保存時と異なれば dirty になる", () => {
       const store = createDocumentStore({ initialContent: "" });
@@ -232,5 +279,9 @@ describe("documentLabel: タブ表示用ラベル", () => {
 
   it("path が undefined なら Untitled を返す", () => {
     expect(documentLabel({ path: undefined })).toBe("Untitled");
+  });
+
+  it("kind が help なら path の有無によらず「ヘルプ」を返す", () => {
+    expect(documentLabel({ path: undefined, kind: "help" })).toBe("ヘルプ");
   });
 });
