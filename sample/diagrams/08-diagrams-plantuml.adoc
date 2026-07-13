@@ -1,5 +1,9 @@
 = 作図(PlantUML・Kroki 経由)
 :author: AsciiDoc Editor
+:toc:
+:toc-title: 目次
+:toclevels: 3
+:numbered:
 
 CAUTION: この節の図は、link:07-diagrams-mermaid.adoc[Mermaid]とは違い、
 この文書内では完結しません。図のソースを**設定した Kroki サーバーへ送信して**

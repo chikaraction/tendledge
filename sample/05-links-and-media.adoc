@@ -1,5 +1,9 @@
 = リンク・画像・相互参照・脚注
 :author: AsciiDoc Editor
+:toc:
+:toc-title: 目次
+:toclevels: 3
+:numbered:
 
 == リンク
 

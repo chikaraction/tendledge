@@ -45,9 +45,14 @@ const BASE_ATTRIBUTES = {
   showtitle: true, // 文書タイトル(= 見出し)をプレビューに表示
   sectnums: false,
   // 例示ブロック・表のキャプション接頭辞("Example"/"Table" が英語で付く)を
-  // 日本語に差し替える(例: "例 1. タイトル" / "表 1. タイトル")
-  "example-caption": "例",
-  "table-caption": "表",
+  // 日本語に差し替える(例: "例 1. タイトル" / "表 1. タイトル")。
+  // 末尾の @ はソフト設定の印: API 経由の属性は既定で文書側から変更できなく
+  // なる(ロックされる)ため、@ を付けて文書内の :example-caption: 等による
+  // 上書きを許す(あくまで既定値の差し替えであり、強制はしない)。
+  "example-caption": "例@",
+  "table-caption": "表@",
+  // :toc: を書いた文書の目次見出し("Table of Contents" が英語で付く)も日本語化
+  "toc-title": "目次@",
 };
 
 /** プレビュー用の HTML 断片に変換する。 */

@@ -1,5 +1,9 @@
 = 表(テーブル)
 :author: AsciiDoc Editor
+:toc:
+:toc-title: 目次
+:toclevels: 3
+:numbered:
 
 == 基本の表
 

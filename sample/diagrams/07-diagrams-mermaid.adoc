@@ -1,5 +1,9 @@
 = 作図(Mermaid)
 :author: AsciiDoc Editor
+:toc:
+:toc-title: 目次
+:toclevels: 3
+:numbered:
 
 Mermaid のコードから図を描けます。図はこのエディタ内で描画され(mermaid.js を
 同梱)、*文書の内容が外部に送信されることはありません*。オフラインでも動きます。
