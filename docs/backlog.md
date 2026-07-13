@@ -31,8 +31,8 @@
   `ui/html-export.ts` の `buildExportHtml` の後処理に組み込む。
   `http(s):` 等の外部 URL は書き換えない。小規模(30分〜1時間)。
 - PDF(印刷)はライブプレビューを `window.print()` する方式のため本対応の範囲外。
-  制限として [export-notes.md](export-notes.md) に記載済み。
-  ヘルプページ(M19 で実装予定、[roadmap.md](roadmap.md) 参照)にも載せる。
+  制限として [export-notes.md](export-notes.md) に記載済みで、
+  アプリ内ヘルプページ(M19 実装済み、src/help-doc.ts)にも載せている。
 
 ## 保管庫の一括 HTML エクスポート(出自: 2026-07-13 検討・前提: 上記 `link:*.adoc` 書き換え)
 
@@ -91,13 +91,6 @@
   流用できる見込み。
 - エクスポート HTML での `:toc: left` 対応(`.toc2` 用 CSS の追加)は本件とは独立の
   小タスク。需要が出たら別途判断する。
-
-## README の英語化(英語 README.md + 日本語 README.ja.md)
-
-- 現在の日本語 README を `README.ja.md` へ移し、英語版 `README.md` を新規に書く
-  (GitHub に閲覧者の言語で自動切り替えする機能はないため、この2ファイル構成が定番)。
-- 両ファイルの冒頭に相互リンクを付ける: `[English](README.md) | [日本語](README.ja.md)`
-- M19 のリブランディング(名称反映で README も触る)と同時期にやると二度手間がない。
 
 ## ドロップダウン開閉配線の共通化(出自: M17 #3・3例目が現れたら)
 

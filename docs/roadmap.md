@@ -20,43 +20,10 @@ Milestone 1〜13 は実装済み。以降の計画を記す。
 - M16: パフォーマンス改善([milestone-16-plan.md](milestone-16-plan.md))
 - M17: テスト補強・小掃除([milestone-17-plan.md](milestone-17-plan.md))
 - M18: サイドバーの幅リサイズ([milestone-18-plan.md](milestone-18-plan.md))
+- M19: リブランディングと配布準備([milestone-19-plan.md](milestone-19-plan.md)。
+  アプリ名 Tendledge・identifier 確定・アイコン・アプリ内ヘルプ(F1)・README 英語化)
 
-## これからの計画(M19)
+## これからの計画
 
-M19 はリブランディングと配布準備(アプリ内ヘルプページを含む)。
-
-## Milestone 19: リブランディングと配布準備(中・1〜2日規模)
-
-配布ビルドを作る前の名前・アイコン・設定の整備と、アプリ内ヘルプページ。
-アプリ名は **tendledge** に決定済み(2026-07-13。表示名は Tendledge と大文字始まり、
-package name / バンドル ID 等の識別子は tendledge と全小文字で使い分ける)。
-
-- **名称の決定**: 済み(tendledge / 表示名 Tendledge)
-- **名称の反映**: `tauri.conf.json` の `productName` / ウィンドウタイトル /
-  `package.json` の name / README。`identifier` は現状プレースホルダ
-  (`com.example.asciidoc-editor`)のままなので正式なものへ変更する
-  (identifier は設定ストア等の保存場所に影響するため変更手順を設計時に確認)
-- **GitHub リポジトリ名の変更** + ローカル remote URL の更新
-- **アプリアイコンの作成**: 元画像(1024×1024 PNG)を 1 枚用意し、
-  `npm run tauri icon <path>` で全プラットフォーム分(.ico / .icns / PNG 各種)を
-  `src-tauri/icons/` に生成する
-- **アプリ内ヘルプページ**(ショートカット一覧+知らないと困惑する仕様の明文化)。
-  構成案:
-  - ショートカット一覧: Ctrl+N / O / S / Shift+S / P / W / Tab /
-    Ctrl+K V(分割) / Ctrl+Shift+V(プレビューのみ) / Ctrl+F、
-    および basicSetup 由来のエディタ操作(Ctrl+Z・Ctrl+Y、Tab/Shift+Tab の
-    インデント、検索パネル内の置換)。注記: Ctrl+K V は Ctrl+K の後 1.5 秒以内、
-    Ctrl+F はプレビューのみ表示中はネイティブ検索になる
-  - AsciiDoc 対応状況: `include::` 非対応(バグに見えやすいので明記。
-    対応検討は [backlog.md](backlog.md))、文書間リンクは `xref:` 推奨
-    (`link:*.adoc` は PDF で `.adoc` のまま残る)、パススルー(`++++`)は
-    プレビューではサニタイズされるが HTML エクスポートには残る挙動差
-  - 図: Mermaid / PlantUML / Draw.io の書き方。**Kroki 有効化時は文書内容が
-    外部サーバへ送信される**注意(プライバシー観点で優先度高)
-  - エクスポート/印刷: ライト配色固定は仕様であること、
-    macOS/Linux の印刷ダイアログ不安定
-  - 保管庫: 対応拡張子のみ表示・ドットファイルと空フォルダ非表示・
-    ファイル監視なし(↻ で手動更新)
-  - タブと未保存データ: Ctrl+W 時の確認とウィンドウ ✕ ボタンの挙動
-- **リリースビルドの確認**: `npm run tauri build` を通し、生成物を
-  verify-tauri チェックリストで実機確認する
+次のマイルストーンは未定。候補は [backlog.md](backlog.md) から拾う
+(保管庫の一括 HTML エクスポート、`include::` 対応、アウトラインパネルなど)。
