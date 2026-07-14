@@ -109,6 +109,48 @@ describe("convertToPreviewHtml: [drawio] / [diagramsnet] ブロックの正規�
   });
 });
 
+// バイライン(著者・リビジョン情報)はプレビュー・エクスポートの両方で表示する方針
+// (2026-07-14 に「両方非表示」から転換。docs/export-notes.md 参照)。
+// ここではプレビュー側(convertToPreviewHtml)の挿入だけを特性化する。
+// マークアップの詳細(id 連番・エスケープ等)は core/byline.test.ts が担う。
+describe("convertToPreviewHtml: 著者バイラインの挿入", () => {
+  it(":author: 付き文書のプレビュー HTML にバイラインが含まれる", () => {
+    const source = [":author: 山田太郎", "", "= タイトル", "", "本文"].join("\n");
+    const html = convertToPreviewHtml(source);
+    expect(html).toContain('<div class="details">');
+    expect(html).toContain('<span id="author" class="author">山田太郎</span>');
+  });
+
+  it("バイラインはタイトルの <h1> の直後に挿入される", () => {
+    const source = [":author: 山田太郎", "", "= タイトル", "", "本文"].join("\n");
+    const html = convertToPreviewHtml(source);
+    const h1End = html.indexOf("</h1>") + "</h1>".length;
+    const detailsStart = html.indexOf('<div class="details">');
+    expect(detailsStart).toBeGreaterThan(0);
+    expect(html.slice(h1End, detailsStart).trim()).toBe("");
+  });
+
+  it("author なしならバイラインは含まれない", () => {
+    const source = ["= タイトル", "", "本文"].join("\n");
+    const html = convertToPreviewHtml(source);
+    expect(html).not.toContain('class="details"');
+  });
+
+  it("タイトルなし文書(見出しが無く <h1> が出ない)なら author があってもバイラインを挿入しない", () => {
+    const source = [":author: 山田太郎", "", "本文だけの文書"].join("\n");
+    const html = convertToPreviewHtml(source);
+    expect(html).not.toContain("<h1");
+    expect(html).not.toContain('class="details"');
+  });
+
+  it("リビジョン情報だけでもバイラインが含まれる", () => {
+    const source = ["= タイトル", "山田太郎", "v1.0, 2026-07-14: 初版", "", "本文"].join("\n");
+    const html = convertToPreviewHtml(source);
+    expect(html).toContain('<span id="revnumber">version 1.0,</span>');
+    expect(html).toContain('<span id="revremark">初版</span>');
+  });
+});
+
 describe("convertToStandaloneHtml: [plantuml] / [drawio] ブロックの正規化", () => {
   it("standalone 出力にも data-lang=\"plantuml\" が含まれる", () => {
     const source = ["= 文書", "", "[plantuml]", "----", "Alice -> Bob: hello", "----"].join("\n");
