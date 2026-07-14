@@ -179,6 +179,19 @@ export interface DocumentStore {
 - 名称・アイコン・設定保存先・リリースビルドは Tauri 実機依存なので、
   verify-tauri の追記項目をユーザーに提示して実機確認してもらう。
 
+## 追記(2026-07-14): ヘルプのプレビュー固定と編集不可
+
+実装後のフィードバックで「ヘルプは必ずプレビューで開き、編集不可にする」へ変更し、
+項目4の「表示モードは触らない」判断を撤回した:
+
+- `core/view-mode.ts` に `enterHelpMode` / `leaveHelpMode`(テスト付き)。
+  ヘルプタブへ入るときプレビューのみへ強制し、離れるとき直前の編集モードへ
+  復元する。ヘルプ表示中に手動でモードを変えた場合は復元で上書きしない。
+- ヘルプタブの EditorState は読み取り専用(`ui/editor.ts` の `newState` に
+  readOnly オプション。`EditorState.readOnly` + `EditorView.editable: false`)。
+- 「名前を付けて保存」でファイルへ昇格したら(core 側で kind が外れるのに合わせ)
+  編集可能な EditorState へ差し替え、モード固定も解除する。
+
 ## 分担の指針
 
 - 項目1〜4 は仕様が明確なので Sonnet サブエージェントへ委譲可
