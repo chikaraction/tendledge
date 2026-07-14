@@ -710,6 +710,16 @@ body {
   font-size: 1em;
 }
 
+/* 著者バイライン(:author: / リビジョン情報から生成される .details)。
+   タイトル直下に来るので h1 側の margin-bottom(0.6em)だけで十分な間隔になり、
+   ここでは margin-top を付けない。本文よりやや小さく、控えめな色で表示する */
+.adoc .details {
+  margin: 0 0 1.6em;
+  font-size: 0.875em;
+  line-height: 1.6;
+  color: var(--fg-muted);
+}
+
 .adoc a {
   color: var(--accent);
 }
