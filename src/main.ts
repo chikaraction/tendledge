@@ -18,6 +18,8 @@ import {
 } from "./core/settings";
 import {
   createViewModeState,
+  enterHelpMode,
+  leaveHelpMode,
   setMode,
   togglePreview,
   toggleSplit,
@@ -165,6 +167,13 @@ function updateTabs(): void {
 // 呼ばれるたびに進み、.then() 側は「自分が最新の切替か」をこれで確認する。
 let scrollRestoreGeneration = 0;
 
+// ヘルプタブは常にプレビューのみで表示する(読み取り専用文書のため)。
+// helpTabActive はアクティブタブがヘルプかどうか、helpRestoreTo は
+// ヘルプへ入る直前の編集モード(離れるときの復元先。core/view-mode.ts の
+// enterHelpMode / leaveHelpMode と対で使う)。
+let helpTabActive = false;
+let helpRestoreTo: "editor" | "split" | undefined;
+
 /** アクティブタブの EditorState を退避してから、指定タブの状態に切り替える */
 function switchEditorTo(id: number, previousId?: number): void {
   // 切替の間はスクロール同期を止める。setState でエディタの内容量が変わると
@@ -181,7 +190,8 @@ function switchEditorTo(id: number, previousId?: number): void {
     });
   }
   const doc = store.list().find((d) => d.id === id)!;
-  const state = editorStates.get(id) ?? editor.newState(doc.content);
+  const state =
+    editorStates.get(id) ?? editor.newState(doc.content, { readOnly: doc.kind === "help" });
   view.setState(state);
   // view.focus() は CodeMirror 内部に「フォーカス時に scrollTop が 0 なら
   // 直前の scrollTop(inputState.lastScrollTop)へ戻す」処理を持つ
@@ -212,6 +222,18 @@ function switchEditorTo(id: number, previousId?: number): void {
   syncStatusbarFromView();
   updateTabs();
   fileTree.setActivePath(doc.path);
+
+  // ヘルプタブへの出入りで表示モードを強制/復元する
+  const enteringHelp = doc.kind === "help";
+  if (enteringHelp && !helpTabActive) {
+    const entered = enterHelpMode(viewModeState);
+    helpRestoreTo = entered.restoreTo;
+    applyViewMode(entered.state);
+  } else if (!enteringHelp && helpTabActive) {
+    applyViewMode(leaveHelpMode(viewModeState, helpRestoreTo));
+    helpRestoreTo = undefined;
+  }
+  helpTabActive = enteringHelp;
 }
 
 function activateTab(id: number): void {
@@ -427,7 +449,11 @@ async function openFileInTab(path: string): Promise<void> {
 function doOpenHelp(): void {
   const previousId = store.activeDoc().id;
   const { doc, alreadyOpen } = store.openHelp(helpDoc);
-  if (alreadyOpen && doc.id === previousId) return;
+  if (alreadyOpen && doc.id === previousId) {
+    // 既にヘルプタブ表示中の F1: 手動で編集モードへ切り替えていてもプレビューへ戻す
+    if (viewModeState.mode !== "preview") applyViewMode(setMode(viewModeState, "preview"));
+    return;
+  }
   switchEditorTo(doc.id, previousId);
 }
 
@@ -453,6 +479,14 @@ async function doSaveAs(): Promise<void> {
   if (!path) return;
   await writeTextFile(path, doc);
   store.markSaved(active.id, doc, path);
+  if (active.kind === "help") {
+    // ファイルへ昇格したヘルプは通常タブになる(core 側で kind が外れる)。
+    // 読み取り専用の EditorState を編集可能なものへ差し替え、モード固定も解く。
+    view.setState(editor.newState(doc));
+    applyViewMode(leaveHelpMode(viewModeState, helpRestoreTo));
+    helpRestoreTo = undefined;
+    helpTabActive = false;
+  }
   updateTabs();
 }
 
