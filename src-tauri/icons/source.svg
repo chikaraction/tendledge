@@ -12,14 +12,18 @@
     </linearGradient>
   </defs>
   <rect x="0" y="0" width="1024" height="1024" rx="220" fill="url(#bg)"/>
-  <!-- 本(開いた見開き)。小サイズ視認性のため線は太め -->
-  <g stroke="#4ec98a" stroke-width="34" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M512 640 C 424 600, 328 590, 252 606 L252 776 C 328 760, 424 770, 512 810 Z" fill="#26302b"/>
-    <path d="M512 640 C 600 600, 696 590, 772 606 L772 776 C 696 760, 600 770, 512 810 Z" fill="#26302b"/>
+  <!-- モチーフ全体を中心から 1.26 倍に拡大(タスクバー等の小サイズでの視認性のため。
+       線幅も一緒に太る) -->
+  <g transform="translate(512 512) scale(1.26) translate(-512 -512)">
+    <!-- 本(開いた見開き)。小サイズ視認性のため線は太め -->
+    <g stroke="#4ec98a" stroke-width="34" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M512 640 C 424 600, 328 590, 252 606 L252 776 C 328 760, 424 770, 512 810 Z" fill="#26302b"/>
+      <path d="M512 640 C 600 600, 696 590, 772 606 L772 776 C 696 760, 600 770, 512 810 Z" fill="#26302b"/>
+    </g>
+    <!-- 茎 -->
+    <path d="M512 640 C 515 555, 508 495, 512 415" fill="none" stroke="url(#sprout)" stroke-width="40" stroke-linecap="round"/>
+    <!-- 葉(左右) -->
+    <path d="M512 452 C 408 448, 330 382, 322 278 C 438 276, 508 350, 512 452 Z" fill="url(#sprout)"/>
+    <path d="M514 396 C 618 384, 692 314, 698 214 C 584 218, 520 292, 514 396 Z" fill="#a5eec4"/>
   </g>
-  <!-- 茎 -->
-  <path d="M512 640 C 515 555, 508 495, 512 415" fill="none" stroke="url(#sprout)" stroke-width="40" stroke-linecap="round"/>
-  <!-- 葉(左右) -->
-  <path d="M512 452 C 408 448, 330 382, 322 278 C 438 276, 508 350, 512 452 Z" fill="url(#sprout)"/>
-  <path d="M514 396 C 618 384, 692 314, 698 214 C 584 218, 520 292, 514 396 Z" fill="#a5eec4"/>
 </svg>
