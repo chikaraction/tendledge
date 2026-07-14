@@ -1,6 +1,8 @@
 // Asciidoctor.js による変換(プロセッサは1回だけ生成する)
 import Asciidoctor from "@asciidoctor/core";
+import type { Document } from "@asciidoctor/core";
 import DOMPurify from "dompurify";
+import { renderBylineHtml, type BylineInfo } from "./core/byline";
 
 const asciidoctor = Asciidoctor();
 
@@ -55,12 +57,54 @@ const BASE_ATTRIBUTES = {
   "toc-title": "目次@",
 };
 
-/** プレビュー用の HTML 断片に変換する。 */
+/**
+ * 文書の著者・リビジョン属性からバイライン情報を取り出す。
+ * doc.getAuthors() / getRevisionNumber() 等はいずれも情報が無ければ
+ * undefined を返すので、core/byline.ts の BylineInfo 形式に詰め替えるだけ。
+ */
+function extractBylineInfo(doc: Document): BylineInfo {
+  const authors = doc
+    .getAuthors()
+    .map((author) => ({ name: author.getName() ?? "", email: author.getEmail() }))
+    .filter((author) => author.name !== "");
+
+  const revision = {
+    number: doc.getRevisionNumber(),
+    date: doc.getRevisionDate(),
+    remark: doc.getRevisionRemark(),
+  };
+  const hasRevision = Boolean(revision.number || revision.date || revision.remark);
+
+  return { authors, revision: hasRevision ? revision : undefined };
+}
+
+/**
+ * プレビュー用の HTML 断片に変換する。
+ * asciidoctor.convert() 相当を asciidoctor.load() + doc.convert() の2段階にしているのは、
+ * 変換後の Document から doc.getAuthors() / getRevisionNumber() 等を読み、
+ * バイラインを組み立てるため(オプションは convert() 直呼びと同一 = BASE_ATTRIBUTES のみ)。
+ * バイラインは showtitle 由来の先頭 <h1> の直後に挿入する。情報が空、または
+ * 文書にタイトルが無く <h1> が出力されていない場合は何も挿入しない
+ * (スクロール同期は h1〜h6 の見出しペアリングに依存するため、バイライン自体は
+ * 見出しタグを使わない)。
+ */
 export function convertToPreviewHtml(source: string): string {
-  return asciidoctor.convert(source, {
+  const doc = asciidoctor.load(source, {
     safe: "safe",
     attributes: BASE_ATTRIBUTES,
-  }) as string;
+  });
+  const html = doc.convert() as string;
+
+  const byline = renderBylineHtml(extractBylineInfo(doc));
+  if (!byline) return html;
+
+  const h1Close = "</h1>";
+  if (!html.startsWith("<h1")) return html;
+  const insertAt = html.indexOf(h1Close);
+  if (insertAt === -1) return html;
+
+  const afterH1 = insertAt + h1Close.length;
+  return `${html.slice(0, afterH1)}\n${byline}${html.slice(afterH1)}`;
 }
 
 /**

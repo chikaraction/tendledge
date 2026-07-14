@@ -1,5 +1,5 @@
 = アドモニション・属性・コメント
-:author: AsciiDoc Editor
+:author: Tendledge
 :toc:
 :toc-title: 目次
 :toclevels: 3

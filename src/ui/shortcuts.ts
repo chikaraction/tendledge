@@ -19,6 +19,8 @@ export interface ShortcutHandlers {
    * (プレビューのみ表示中など)。
    */
   onFind: () => boolean;
+  /** F1(修飾キーなし)。ヘルプ文書を開く */
+  onHelp: () => void;
 }
 
 // Ctrl+K の後に次のキーを待つ猶予(ms)。この間に V が来なければコードを解除する。
@@ -34,6 +36,13 @@ export function setupShortcuts(handlers: ShortcutHandlers): void {
   }
 
   window.addEventListener("keydown", (e) => {
+    // F1 は修飾キーなしの単独キーなので、Ctrl+キー用のガードより前に処理する。
+    if (e.key === "F1" && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+      e.preventDefault();
+      resetChord();
+      handlers.onHelp();
+      return;
+    }
     // e.altKey も見て除外するのは、Windows では AltGr+キー(欧州系レイアウトで文字入力に
     // 使われる)が ctrlKey: true, altKey: true として届くため。これを弾かないと
     // 例えば AltGr+F で Ctrl+F 相当が誤発火し、文字入力を潰してしまう。

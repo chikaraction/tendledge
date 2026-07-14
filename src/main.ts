@@ -18,12 +18,15 @@ import {
 } from "./core/settings";
 import {
   createViewModeState,
+  enterHelpMode,
+  leaveHelpMode,
   setMode,
   togglePreview,
   toggleSplit,
   type ViewModeState,
 } from "./core/view-mode";
 import { buildVaultTree, countFiles, exceedsMaxVaultDepth, type RawEntry } from "./core/vault-tree";
+import { helpDoc } from "./help-doc";
 import { sampleDoc } from "./sample-doc";
 import { alertDialog, confirmDialog } from "./ui/dialogs";
 import { setupDivider } from "./ui/divider";
@@ -164,6 +167,22 @@ function updateTabs(): void {
 // 呼ばれるたびに進み、.then() 側は「自分が最新の切替か」をこれで確認する。
 let scrollRestoreGeneration = 0;
 
+// ヘルプタブは常にプレビューのみで表示する(読み取り専用文書のため)。
+// helpTabActive はアクティブタブがヘルプかどうか、helpRestoreTo は
+// ヘルプへ入る直前の編集モード(離れるときの復元先。core/view-mode.ts の
+// enterHelpMode / leaveHelpMode と対で使う)。
+let helpTabActive = false;
+let helpRestoreTo: "editor" | "split" | undefined;
+
+/**
+ * ヘルプタブ表示中はタブバー右上の表示モード切替ボタン(createViewModeControls)を隠す。
+ * 常にプレビューのみで固定されるため、ボタンからモードを動かせないようにする。
+ * helpTabActive が変わる箇所(switchEditorTo のヘルプ出入り・doSaveAs の昇格処理)で呼ぶ。
+ */
+function syncViewModeControlsVisibility(): void {
+  tabbarActionsEl.hidden = helpTabActive;
+}
+
 /** アクティブタブの EditorState を退避してから、指定タブの状態に切り替える */
 function switchEditorTo(id: number, previousId?: number): void {
   // 切替の間はスクロール同期を止める。setState でエディタの内容量が変わると
@@ -180,7 +199,8 @@ function switchEditorTo(id: number, previousId?: number): void {
     });
   }
   const doc = store.list().find((d) => d.id === id)!;
-  const state = editorStates.get(id) ?? editor.newState(doc.content);
+  const state =
+    editorStates.get(id) ?? editor.newState(doc.content, { readOnly: doc.kind === "help" });
   view.setState(state);
   // view.focus() は CodeMirror 内部に「フォーカス時に scrollTop が 0 なら
   // 直前の scrollTop(inputState.lastScrollTop)へ戻す」処理を持つ
@@ -211,6 +231,19 @@ function switchEditorTo(id: number, previousId?: number): void {
   syncStatusbarFromView();
   updateTabs();
   fileTree.setActivePath(doc.path);
+
+  // ヘルプタブへの出入りで表示モードを強制/復元する
+  const enteringHelp = doc.kind === "help";
+  if (enteringHelp && !helpTabActive) {
+    const entered = enterHelpMode(viewModeState);
+    helpRestoreTo = entered.restoreTo;
+    applyViewMode(entered.state);
+  } else if (!enteringHelp && helpTabActive) {
+    applyViewMode(leaveHelpMode(viewModeState, helpRestoreTo));
+    helpRestoreTo = undefined;
+  }
+  helpTabActive = enteringHelp;
+  syncViewModeControlsVisibility();
 }
 
 function activateTab(id: number): void {
@@ -356,8 +389,8 @@ const viewModeControls = createViewModeControls(
   tabbarActionsEl,
   document.getElementById("workspace")!,
   {
-    onToggleSplit: () => applyViewMode(toggleSplit(viewModeState)),
-    onTogglePreview: () => applyViewMode(togglePreview(viewModeState)),
+    onToggleSplit: () => applyViewModeFromUser(toggleSplit(viewModeState)),
+    onTogglePreview: () => applyViewModeFromUser(togglePreview(viewModeState)),
   },
 );
 viewModeControls.render(viewModeState);
@@ -380,6 +413,18 @@ function applyViewMode(next: ViewModeState): void {
   viewModeControls.render(viewModeState);
   menubar.refresh();
   syncScrollOnModeChange(previousMode, viewModeState.mode);
+}
+
+/**
+ * 表示メニュー・ショートカット・タブバーの切り替えボタンなど、ユーザー操作起点の
+ * モード変更はすべてこれ経由にする。ヘルプタブ表示中(helpTabActive)は
+ * 「画面操作ではプレビューのみから一切動かせない」よう無視する。
+ * ヘルプ出入りの内部遷移(switchEditorTo・doOpenHelp・doSaveAs の昇格処理)は
+ * これを経由せず applyViewMode を直接呼ぶ。
+ */
+function applyViewModeFromUser(next: ViewModeState): void {
+  if (helpTabActive) return;
+  applyViewMode(next);
 }
 
 setupPreviewLinks({
@@ -422,6 +467,20 @@ async function openFileInTab(path: string): Promise<void> {
   switchEditorTo(doc.id, previousId);
 }
 
+/** ヘルプ文書をタブとして開く(F1・メニュー「ヘルプ」→「ヘルプを開く」)。既に開いていれば既存タブへフォーカスする */
+function doOpenHelp(): void {
+  const previousId = store.activeDoc().id;
+  const { doc, alreadyOpen } = store.openHelp(helpDoc);
+  if (alreadyOpen && doc.id === previousId) {
+    // 既にヘルプタブ表示中の F1。applyViewModeFromUser 経由の全操作をヘルプ表示中は
+    // 無視するようにしたため、UI からは viewModeState.mode が "preview" 以外になる
+    // 経路は無いはずだが、想定外の状態不整合に備えた防御としてそのまま残す。
+    if (viewModeState.mode !== "preview") applyViewMode(setMode(viewModeState, "preview"));
+    return;
+  }
+  switchEditorTo(doc.id, previousId);
+}
+
 async function doSave(): Promise<void> {
   const active = store.activeDoc();
   if (!active.path) {
@@ -444,6 +503,15 @@ async function doSaveAs(): Promise<void> {
   if (!path) return;
   await writeTextFile(path, doc);
   store.markSaved(active.id, doc, path);
+  if (active.kind === "help") {
+    // ファイルへ昇格したヘルプは通常タブになる(core 側で kind が外れる)。
+    // 読み取り専用の EditorState を編集可能なものへ差し替え、モード固定も解く。
+    view.setState(editor.newState(doc));
+    applyViewMode(leaveHelpMode(viewModeState, helpRestoreTo));
+    helpRestoreTo = undefined;
+    helpTabActive = false;
+    syncViewModeControlsVisibility();
+  }
   updateTabs();
 }
 
@@ -624,19 +692,19 @@ const menubar = createMenubar(document.getElementById("menubar")!, [
       {
         label: "エディタのみ",
         checked: () => viewModeState.mode === "editor",
-        onSelect: () => applyViewMode(setMode(viewModeState, "editor")),
+        onSelect: () => applyViewModeFromUser(setMode(viewModeState, "editor")),
       },
       {
         label: "分割",
         shortcut: "Ctrl+K V",
         checked: () => viewModeState.mode === "split",
-        onSelect: () => applyViewMode(setMode(viewModeState, "split")),
+        onSelect: () => applyViewModeFromUser(setMode(viewModeState, "split")),
       },
       {
         label: "プレビューのみ",
         shortcut: "Ctrl+Shift+V",
         checked: () => viewModeState.mode === "preview",
-        onSelect: () => applyViewMode(setMode(viewModeState, "preview")),
+        onSelect: () => applyViewModeFromUser(setMode(viewModeState, "preview")),
       },
       "separator",
       {
@@ -655,6 +723,11 @@ const menubar = createMenubar(document.getElementById("menubar")!, [
         onSelect: () => setTheme("dark"),
       },
     ],
+  },
+  {
+    id: "help",
+    label: "ヘルプ",
+    entries: [{ label: "ヘルプを開く", shortcut: "F1", onSelect: doOpenHelp }],
   },
 ]);
 
@@ -677,8 +750,9 @@ setupShortcuts({
     const nextId = store.activeDoc().id;
     if (nextId !== previousId) switchEditorTo(nextId, previousId);
   },
-  onToggleSplit: () => applyViewMode(toggleSplit(viewModeState)),
-  onTogglePreview: () => applyViewMode(togglePreview(viewModeState)),
+  onToggleSplit: () => applyViewModeFromUser(toggleSplit(viewModeState)),
+  onTogglePreview: () => applyViewModeFromUser(togglePreview(viewModeState)),
+  onHelp: doOpenHelp,
   onFind: () => {
     // プレビューのみ表示中はエディタが非表示なので、ネイティブ検索バーに任せる。
     // それ以外(エディタ表示中)はプレビューにフォーカスがあっても検索パネルを開く。

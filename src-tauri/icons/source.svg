@@ -1,0 +1,31 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Tendledge アプリアイコン: 開いた本から芽が育つ(知識を育てる)
+       配色: 緑主体(緑がタイル面積の過半を占める構成。紫は UI アクセント用に温存)+ 白いモチーフ。
+       2026-07-14 ユーザーフィードバックで確定: 縦長の本 / 大きな左右の葉 / 短い茎 /
+       ページ上端と同じカーブの本文線(半透明白。小サイズでは自然に消える) -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#34b873"/>
+      <stop offset="1" stop-color="#1e8a50"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1024" height="1024" rx="220" fill="url(#bg)"/>
+  <!-- 本(縦長の見開き) -->
+  <g stroke="#ffffff" stroke-width="42" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M512 620 C 400 570, 290 558, 200 578 L200 830 C 290 810, 400 822, 512 872 Z" fill="rgba(255,255,255,0.16)"/>
+    <path d="M512 620 C 624 570, 734 558, 824 578 L824 830 C 734 810, 624 822, 512 872 Z" fill="rgba(255,255,255,0.16)"/>
+  </g>
+  <!-- 本文の線(ページ上端と同じカーブの平行移動。外側がわずかに持ち上がる) -->
+  <g stroke="#ffffff" stroke-opacity="0.55" stroke-width="18" stroke-linecap="round" fill="none">
+    <path d="M490 692 C 398 651, 308 641, 234 658"/>
+    <path d="M490 760 C 398 719, 308 709, 234 726"/>
+    <path d="M534 692 C 626 651, 716 641, 790 658"/>
+    <path d="M534 760 C 626 719, 716 709, 790 726"/>
+  </g>
+  <!-- 茎(短め) -->
+  <path d="M512 620 C 515 545, 508 480, 512 410" fill="none" stroke="#ffffff" stroke-width="48" stroke-linecap="round"/>
+  <!-- 右の大きな葉 -->
+  <path d="M512 414 C 512 288, 612 178, 790 166 C 786 330, 668 418, 512 414 Z" fill="#ffffff"/>
+  <!-- 左の葉 -->
+  <path d="M512 452 C 512 340, 416 240, 252 230 C 256 386, 372 456, 512 452 Z" fill="#d7f7e6"/>
+</svg>

@@ -40,8 +40,8 @@ const headingHighlight = syntaxHighlighting(
 
 export interface EditorController {
   view: EditorView;
-  /** タブ用に新しい EditorState を作る(拡張セットは共通) */
-  newState(content: string): EditorState;
+  /** タブ用に新しい EditorState を作る(拡張セットは共通)。readOnly はヘルプ等の組み込み文書用 */
+  newState(content: string, opts?: { readOnly?: boolean }): EditorState;
 }
 
 export function createEditor(opts: {
@@ -101,8 +101,13 @@ export function createEditor(opts: {
     }),
   ];
 
-  function newState(content: string): EditorState {
-    return EditorState.create({ doc: content, extensions });
+  function newState(content: string, o?: { readOnly?: boolean }): EditorState {
+    // EditorView.editable=false でカーソル・直接入力を無効化し、
+    // EditorState.readOnly=true でキーマップ経由の編集コマンドも抑止する(両方必要)。
+    const stateExtensions = o?.readOnly
+      ? [extensions, EditorState.readOnly.of(true), EditorView.editable.of(false)]
+      : extensions;
+    return EditorState.create({ doc: content, extensions: stateExtensions });
   }
 
   const view = new EditorView({

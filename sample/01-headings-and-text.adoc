@@ -1,5 +1,5 @@
 = 見出しと段落・インライン文字装飾
-:author: AsciiDoc Editor
+:author: Tendledge
 :encoding: utf-8
 :lang: ja
 :toc:
@@ -47,6 +47,6 @@
 
 == 属性置換
 
-:product-name: AsciiDoc Editor
+:product-name: Tendledge
 
 このアプリの名前は {product-name} です。属性は文書内のどこでも再利用できます。

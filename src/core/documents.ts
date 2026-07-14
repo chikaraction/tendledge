@@ -15,10 +15,13 @@ export interface DocumentInfo {
   readonly path: string | undefined;
   /** 現在の内容(dirty 判定用に ui 層から同期される) */
   readonly content: string;
+  /** "help" = 組み込みヘルプ文書(重複オープン防止・ラベル固定) */
+  readonly kind?: "help";
 }
 
-/** タブ表示用のラベル。path があればファイル名、なければ "Untitled"。 */
-export function documentLabel(doc: Pick<DocumentInfo, "path">): string {
+/** タブ表示用のラベル。ヘルプ文書は「ヘルプ」固定、それ以外は path があればファイル名、なければ "Untitled"。 */
+export function documentLabel(doc: Pick<DocumentInfo, "path" | "kind">): string {
+  if (doc.kind === "help") return "ヘルプ";
   return doc.path ? basename(doc.path) : "Untitled";
 }
 
@@ -38,6 +41,8 @@ export interface DocumentStore {
   openUntitled(): DocumentInfo;
   /** ファイルをタブとして開く。同じ path が開いていれば既存タブをアクティブ化する */
   openFile(path: string, content: string): OpenFileResult;
+  /** ヘルプ文書をタブとして開く。既に開いていれば既存タブをアクティブ化する */
+  openHelp(content: string): OpenFileResult;
   /**
    * エディタでの編集内容を反映する(dirty 判定が更新される)。
    * 戻り値は「呼び出し前後で isDirty が変化したか」(タブバー再描画の要否判定に使う)。
@@ -57,6 +62,7 @@ interface DocumentRecord {
   path: string | undefined;
   content: string;
   lastSavedContent: string;
+  kind?: "help";
 }
 
 export function createDocumentStore(opts: { initialContent: string }): DocumentStore {
@@ -64,8 +70,12 @@ export function createDocumentStore(opts: { initialContent: string }): DocumentS
   const docs: DocumentRecord[] = [];
   let activeId: number;
 
-  function createDoc(path: string | undefined, content: string): DocumentRecord {
-    const doc: DocumentRecord = { id: nextId++, path, content, lastSavedContent: content };
+  function createDoc(
+    path: string | undefined,
+    content: string,
+    kind?: "help",
+  ): DocumentRecord {
+    const doc: DocumentRecord = { id: nextId++, path, content, lastSavedContent: content, kind };
     docs.push(doc);
     return doc;
   }
@@ -75,7 +85,7 @@ export function createDocumentStore(opts: { initialContent: string }): DocumentS
   }
 
   function toInfo(doc: DocumentRecord): DocumentInfo {
-    return { id: doc.id, path: doc.path, content: doc.content };
+    return { id: doc.id, path: doc.path, content: doc.content, kind: doc.kind };
   }
 
   // 初期ドキュメント(サンプル文書は保存済み扱いで dirty にしない)
@@ -110,6 +120,16 @@ export function createDocumentStore(opts: { initialContent: string }): DocumentS
       activeId = doc.id;
       return { doc: toInfo(doc), alreadyOpen: false };
     },
+    openHelp(content) {
+      const existing = docs.find((d) => d.kind === "help");
+      if (existing) {
+        activeId = existing.id;
+        return { doc: toInfo(existing), alreadyOpen: true };
+      }
+      const doc = createDoc(undefined, content, "help");
+      activeId = doc.id;
+      return { doc: toInfo(doc), alreadyOpen: false };
+    },
     updateContent(id, content) {
       const doc = find(id);
       if (!doc) return false;
@@ -123,7 +143,11 @@ export function createDocumentStore(opts: { initialContent: string }): DocumentS
       if (!doc) return;
       doc.content = content;
       doc.lastSavedContent = content;
-      if (path !== undefined) doc.path = path;
+      if (path !== undefined) {
+        // ファイルへ昇格したらヘルプ扱いを外す(ラベルをファイル名にし、次の openHelp は新規タブを作る)
+        doc.path = path;
+        doc.kind = undefined;
+      }
     },
     activate(id) {
       if (find(id)) activeId = id;

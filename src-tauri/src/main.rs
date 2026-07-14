@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    asciidoc_editor_lib::run()
+    tendledge_lib::run()
 }

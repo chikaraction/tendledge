@@ -1,5 +1,5 @@
 = リンク・画像・相互参照・脚注
-:author: AsciiDoc Editor
+:author: Tendledge
 :toc:
 :toc-title: 目次
 :toclevels: 3

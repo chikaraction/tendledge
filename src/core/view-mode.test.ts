@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   advanceChord,
   createViewModeState,
+  enterHelpMode,
+  leaveHelpMode,
   setMode,
   togglePreview,
   toggleSplit,
@@ -88,6 +90,49 @@ describe("setMode: メニューからの直接指定", () => {
     const next = setMode(state, "preview");
     expect(next.mode).toBe("preview");
     expect(next.lastEditMode).toBe("split");
+  });
+});
+
+describe("enterHelpMode / leaveHelpMode: ヘルプタブのプレビュー固定と復元", () => {
+  it("split から入ると preview になり、復元先として split を覚える", () => {
+    const state = { mode: "split", lastEditMode: "split" } as const;
+    const entered = enterHelpMode(state);
+    expect(entered.state.mode).toBe("preview");
+    expect(entered.restoreTo).toBe("split");
+  });
+
+  it("editor から入ると preview になり、復元先として editor を覚える", () => {
+    const state = { mode: "editor", lastEditMode: "editor" } as const;
+    const entered = enterHelpMode(state);
+    expect(entered.state.mode).toBe("preview");
+    expect(entered.restoreTo).toBe("editor");
+  });
+
+  it("すでに preview なら状態は変わらず、復元先もない", () => {
+    const state = { mode: "preview", lastEditMode: "split" } as const;
+    const entered = enterHelpMode(state);
+    expect(entered.state).toEqual(state);
+    expect(entered.restoreTo).toBeUndefined();
+  });
+
+  it("離れるとき、復元先があれば preview からそのモードへ戻る", () => {
+    const state = { mode: "preview", lastEditMode: "split" } as const;
+    const next = leaveHelpMode(state, "split");
+    expect(next.mode).toBe("split");
+    expect(next.lastEditMode).toBe("split");
+  });
+
+  it("復元先がなければ(preview 中に開いた)preview のまま", () => {
+    const state = { mode: "preview", lastEditMode: "editor" } as const;
+    const next = leaveHelpMode(state, undefined);
+    expect(next).toEqual(state);
+  });
+
+  it("ヘルプ表示中に手動でモードを変えていたら、復元で上書きしない", () => {
+    // ユーザーが Ctrl+K V 等で split に切り替えた後に別タブへ移った場合
+    const state = { mode: "split", lastEditMode: "split" } as const;
+    const next = leaveHelpMode(state, "editor");
+    expect(next).toEqual(state);
   });
 });
 

@@ -1,5 +1,5 @@
 = 表(テーブル)
-:author: AsciiDoc Editor
+:author: Tendledge
 :toc:
 :toc-title: 目次
 :toclevels: 3

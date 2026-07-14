@@ -61,9 +61,31 @@ PDF(印刷)とスタンドアロン HTML エクスポートに関する設計判
   - チェックボックスの状態は `.checked` ではなく **`.defaultChecked`** で設定すること。
     シリアライズ可能な `checked` *属性*に反映されるのは `defaultChecked` だけで、
     `.checked` はライブ DOM 限りの状態のため `outerHTML` で黙って落ちる。
-- **byline 除去**: `standalone: true` が自動生成する著者行はライブプレビューには
-  存在しないので後処理で取り除く(WYSIWYG: エディタに表示されないものを
-  エクスポートが足してはいけない)。
+
+## 著者バイライン(`:author:`)の表示方針
+
+**2026-07-14 に「両方非表示」から「両方表示」へ転換した**(WYSIWYG の原則自体は維持)。
+
+- **旧方針(〜2026-07-13)**: ライブプレビューは埋め込み変換(`standalone` なし)
+  のため著者バイラインが出ない。スタンドアロン HTML エクスポート(`standalone: true`)
+  では Asciidoctor が自動でバイラインを生成してしまうため、
+  `ui/html-export.ts` の後処理で `#header .details` を削除し、
+  「エディタに表示されないものはエクスポートも足さない」という向きで
+  プレビューとエクスポートの見た目を揃えていた。
+- **転換の理由**: VS Code の AsciiDoc 拡張をはじめ、標準的な AsciiDoc レンダラは
+  `:author:` があればバイラインを表示するのが通例で、Asciidoctor 自身の標準出力とも
+  食い違っていた。「両方表示」の方が一般的な期待に沿う。
+- **新方針(2026-07-14〜)**: `core/byline.ts` の純粋関数が、Asciidoctor の
+  Html5Converter と同じマークアップ構造(`<div class="details">` 配下の
+  `<span id="author">` / `<span id="email">`(2人目以降は `author2`/`email2` 形式)、
+  `<span id="revnumber">` / `<span id="revdate">` / `<span id="revremark">`)で
+  HTML を生成する。`render.ts` の `convertToPreviewHtml` がこれをライブプレビューの
+  先頭 `<h1>` 直後に挿入し(タイトルなし文書や情報が空のときは挿入しない)、
+  `ui/html-export.ts` 側は逆に **何もしない**(`standalone: true` の自動生成を
+  そのまま残す)。WYSIWYG は「エクスポート側で消す」のではなく
+  「プレビュー側に Asciidoctor 標準相当のものを足す」ことで保っている。
+  スタイルは `.adoc .details`(styles.css)に置き、`core/export-css.ts` の
+  抽出でエクスポート HTML にも自動で効く。
 
 ## 既知の制限: `link:` マクロの `.adoc` リンクは変換されない
 

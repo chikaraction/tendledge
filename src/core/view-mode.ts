@@ -39,6 +39,33 @@ export function setMode(state: ViewModeState, mode: ViewMode): ViewModeState {
   return { mode, lastEditMode: mode };
 }
 
+/**
+ * ヘルプタブ(読み取り専用の組み込み文書)へ入るときのモード強制。
+ * 常にプレビューのみで表示する。preview 以外から入った場合は、
+ * 離れるときに戻すためのモードを restoreTo として返す。
+ */
+export function enterHelpMode(state: ViewModeState): {
+  state: ViewModeState;
+  restoreTo: EditMode | undefined;
+} {
+  const mode = state.mode;
+  if (mode === "preview") return { state, restoreTo: undefined };
+  return { state: { mode: "preview", lastEditMode: mode }, restoreTo: mode };
+}
+
+/**
+ * ヘルプタブから通常タブへ戻るときのモード復元。
+ * ヘルプ表示中にユーザーが手動でモードを変えていた場合(preview 以外)は
+ * その選択を尊重して上書きしない。
+ */
+export function leaveHelpMode(
+  state: ViewModeState,
+  restoreTo: EditMode | undefined,
+): ViewModeState {
+  if (restoreTo === undefined || state.mode !== "preview") return state;
+  return { mode: restoreTo, lastEditMode: restoreTo };
+}
+
 /** Ctrl+K V のコード入力(2打鍵)の待機状態 */
 export type ChordState = "pending";
 type ChordResult = "pending" | "fire" | "idle";

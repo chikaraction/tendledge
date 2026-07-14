@@ -4,7 +4,12 @@
 // - アドモニションアイコン・チェックリストのチェックボックス化(プレビューと同じ DOM 装飾)
 // - コードブロックのシンタックスハイライト(スクリプト同梱なしで静的に焼き込む)
 // - .adoc スコープの CSS(ライト固定。styles.css から抽出。--hl-* トークンも含む)
-// - 著者バイライン(プレビューには出ない要素なので、エクスポートでも消して合わせる)
+//
+// 著者バイライン(standalone: true が自動生成する #header .details)は
+// 2026-07-14 以降そのまま残す。ライブプレビュー側にも render.ts が同じ
+// マークアップ構造でバイラインを挿入するようになったため、WYSIWYG は
+// 「エクスポート側で消す」のではなく「プレビュー側に足す」ことで保たれている
+// (経緯は docs/export-notes.md 参照)。
 import stylesCssRaw from "../styles.css?raw";
 import { extractLightAdocCss } from "../core/export-css";
 import { convertToStandaloneHtml } from "../render";
@@ -53,10 +58,6 @@ export async function buildExportHtml(
   if (kroki?.enabled) {
     await renderKrokiBlocks(doc, { serverUrl: kroki.serverUrl });
   }
-
-  // ライブプレビューは :author: があってもタイトルのみでバイラインを出さないため、
-  // standalone: true が自動生成する著者バイラインを削除して挙動を揃える
-  doc.querySelector("#header .details")?.remove();
 
   doc.body.classList.add("adoc");
 

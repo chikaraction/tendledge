@@ -1,5 +1,5 @@
 = AsciiDoc 記法サンプル集
-:author: AsciiDoc Editor
+:author: Tendledge
 :toc:
 :doctype: article
 
