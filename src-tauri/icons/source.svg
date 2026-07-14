@@ -1,29 +1,31 @@
 <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
   <!-- Tendledge アプリアイコン: 開いた本から芽が育つ(知識を育てる)
-       配色: 地は Slate のダークトーン、モチーフは緑ベース(芽=成長。紫はUIアクセント用に温存) -->
+       配色: 緑主体(緑がタイル面積の過半を占める構成。紫は UI アクセント用に温存)+ 白いモチーフ。
+       2026-07-14 ユーザーフィードバックで確定: 縦長の本 / 大きな左右の葉 / 短い茎 /
+       ページ上端と同じカーブの本文線(半透明白。小サイズでは自然に消える) -->
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#25252f"/>
-      <stop offset="1" stop-color="#16161c"/>
-    </linearGradient>
-    <linearGradient id="sprout" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0" stop-color="#22a35f"/>
-      <stop offset="1" stop-color="#7fe0a8"/>
+      <stop offset="0" stop-color="#34b873"/>
+      <stop offset="1" stop-color="#1e8a50"/>
     </linearGradient>
   </defs>
   <rect x="0" y="0" width="1024" height="1024" rx="220" fill="url(#bg)"/>
-  <!-- モチーフ全体を中心から 1.26 倍に拡大(タスクバー等の小サイズでの視認性のため。
-       線幅も一緒に太る) -->
-  <g transform="translate(512 512) scale(1.26) translate(-512 -512)">
-    <!-- 本(開いた見開き)。小サイズ視認性のため線は太め -->
-    <g stroke="#4ec98a" stroke-width="34" stroke-linejoin="round" stroke-linecap="round">
-      <path d="M512 640 C 424 600, 328 590, 252 606 L252 776 C 328 760, 424 770, 512 810 Z" fill="#26302b"/>
-      <path d="M512 640 C 600 600, 696 590, 772 606 L772 776 C 696 760, 600 770, 512 810 Z" fill="#26302b"/>
-    </g>
-    <!-- 茎 -->
-    <path d="M512 640 C 515 555, 508 495, 512 415" fill="none" stroke="url(#sprout)" stroke-width="40" stroke-linecap="round"/>
-    <!-- 葉(左右) -->
-    <path d="M512 452 C 408 448, 330 382, 322 278 C 438 276, 508 350, 512 452 Z" fill="url(#sprout)"/>
-    <path d="M514 396 C 618 384, 692 314, 698 214 C 584 218, 520 292, 514 396 Z" fill="#a5eec4"/>
+  <!-- 本(縦長の見開き) -->
+  <g stroke="#ffffff" stroke-width="42" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M512 620 C 400 570, 290 558, 200 578 L200 830 C 290 810, 400 822, 512 872 Z" fill="rgba(255,255,255,0.16)"/>
+    <path d="M512 620 C 624 570, 734 558, 824 578 L824 830 C 734 810, 624 822, 512 872 Z" fill="rgba(255,255,255,0.16)"/>
   </g>
+  <!-- 本文の線(ページ上端と同じカーブの平行移動。外側がわずかに持ち上がる) -->
+  <g stroke="#ffffff" stroke-opacity="0.55" stroke-width="18" stroke-linecap="round" fill="none">
+    <path d="M490 692 C 398 651, 308 641, 234 658"/>
+    <path d="M490 760 C 398 719, 308 709, 234 726"/>
+    <path d="M534 692 C 626 651, 716 641, 790 658"/>
+    <path d="M534 760 C 626 719, 716 709, 790 726"/>
+  </g>
+  <!-- 茎(短め) -->
+  <path d="M512 620 C 515 545, 508 480, 512 410" fill="none" stroke="#ffffff" stroke-width="48" stroke-linecap="round"/>
+  <!-- 右の大きな葉 -->
+  <path d="M512 414 C 512 288, 612 178, 790 166 C 786 330, 668 418, 512 414 Z" fill="#ffffff"/>
+  <!-- 左の葉 -->
+  <path d="M512 452 C 512 340, 416 240, 252 230 C 256 386, 372 456, 512 452 Z" fill="#d7f7e6"/>
 </svg>
