@@ -174,6 +174,15 @@ let scrollRestoreGeneration = 0;
 let helpTabActive = false;
 let helpRestoreTo: "editor" | "split" | undefined;
 
+/**
+ * ヘルプタブ表示中はタブバー右上の表示モード切替ボタン(createViewModeControls)を隠す。
+ * 常にプレビューのみで固定されるため、ボタンからモードを動かせないようにする。
+ * helpTabActive が変わる箇所(switchEditorTo のヘルプ出入り・doSaveAs の昇格処理)で呼ぶ。
+ */
+function syncViewModeControlsVisibility(): void {
+  tabbarActionsEl.hidden = helpTabActive;
+}
+
 /** アクティブタブの EditorState を退避してから、指定タブの状態に切り替える */
 function switchEditorTo(id: number, previousId?: number): void {
   // 切替の間はスクロール同期を止める。setState でエディタの内容量が変わると
@@ -234,6 +243,7 @@ function switchEditorTo(id: number, previousId?: number): void {
     helpRestoreTo = undefined;
   }
   helpTabActive = enteringHelp;
+  syncViewModeControlsVisibility();
 }
 
 function activateTab(id: number): void {
@@ -379,8 +389,8 @@ const viewModeControls = createViewModeControls(
   tabbarActionsEl,
   document.getElementById("workspace")!,
   {
-    onToggleSplit: () => applyViewMode(toggleSplit(viewModeState)),
-    onTogglePreview: () => applyViewMode(togglePreview(viewModeState)),
+    onToggleSplit: () => applyViewModeFromUser(toggleSplit(viewModeState)),
+    onTogglePreview: () => applyViewModeFromUser(togglePreview(viewModeState)),
   },
 );
 viewModeControls.render(viewModeState);
@@ -403,6 +413,18 @@ function applyViewMode(next: ViewModeState): void {
   viewModeControls.render(viewModeState);
   menubar.refresh();
   syncScrollOnModeChange(previousMode, viewModeState.mode);
+}
+
+/**
+ * 表示メニュー・ショートカット・タブバーの切り替えボタンなど、ユーザー操作起点の
+ * モード変更はすべてこれ経由にする。ヘルプタブ表示中(helpTabActive)は
+ * 「画面操作ではプレビューのみから一切動かせない」よう無視する。
+ * ヘルプ出入りの内部遷移(switchEditorTo・doOpenHelp・doSaveAs の昇格処理)は
+ * これを経由せず applyViewMode を直接呼ぶ。
+ */
+function applyViewModeFromUser(next: ViewModeState): void {
+  if (helpTabActive) return;
+  applyViewMode(next);
 }
 
 setupPreviewLinks({
@@ -450,7 +472,9 @@ function doOpenHelp(): void {
   const previousId = store.activeDoc().id;
   const { doc, alreadyOpen } = store.openHelp(helpDoc);
   if (alreadyOpen && doc.id === previousId) {
-    // 既にヘルプタブ表示中の F1: 手動で編集モードへ切り替えていてもプレビューへ戻す
+    // 既にヘルプタブ表示中の F1。applyViewModeFromUser 経由の全操作をヘルプ表示中は
+    // 無視するようにしたため、UI からは viewModeState.mode が "preview" 以外になる
+    // 経路は無いはずだが、想定外の状態不整合に備えた防御としてそのまま残す。
     if (viewModeState.mode !== "preview") applyViewMode(setMode(viewModeState, "preview"));
     return;
   }
@@ -486,6 +510,7 @@ async function doSaveAs(): Promise<void> {
     applyViewMode(leaveHelpMode(viewModeState, helpRestoreTo));
     helpRestoreTo = undefined;
     helpTabActive = false;
+    syncViewModeControlsVisibility();
   }
   updateTabs();
 }
@@ -667,19 +692,19 @@ const menubar = createMenubar(document.getElementById("menubar")!, [
       {
         label: "エディタのみ",
         checked: () => viewModeState.mode === "editor",
-        onSelect: () => applyViewMode(setMode(viewModeState, "editor")),
+        onSelect: () => applyViewModeFromUser(setMode(viewModeState, "editor")),
       },
       {
         label: "分割",
         shortcut: "Ctrl+K V",
         checked: () => viewModeState.mode === "split",
-        onSelect: () => applyViewMode(setMode(viewModeState, "split")),
+        onSelect: () => applyViewModeFromUser(setMode(viewModeState, "split")),
       },
       {
         label: "プレビューのみ",
         shortcut: "Ctrl+Shift+V",
         checked: () => viewModeState.mode === "preview",
-        onSelect: () => applyViewMode(setMode(viewModeState, "preview")),
+        onSelect: () => applyViewModeFromUser(setMode(viewModeState, "preview")),
       },
       "separator",
       {
@@ -725,8 +750,8 @@ setupShortcuts({
     const nextId = store.activeDoc().id;
     if (nextId !== previousId) switchEditorTo(nextId, previousId);
   },
-  onToggleSplit: () => applyViewMode(toggleSplit(viewModeState)),
-  onTogglePreview: () => applyViewMode(togglePreview(viewModeState)),
+  onToggleSplit: () => applyViewModeFromUser(toggleSplit(viewModeState)),
+  onTogglePreview: () => applyViewModeFromUser(togglePreview(viewModeState)),
   onHelp: doOpenHelp,
   onFind: () => {
     // プレビューのみ表示中はエディタが非表示なので、ネイティブ検索バーに任せる。

@@ -316,6 +316,12 @@ body {
   padding: 0 0.4rem;
 }
 
+/* display: flex が UA の [hidden] { display: none } を上書きしてしまうため明示する
+   (ヘルプタブ表示中に main.ts の syncViewModeControlsVisibility が hidden を切り替える) */
+#tabbar-actions[hidden] {
+  display: none;
+}
+
 .tabbar-action {
   display: flex;
   align-items: center;

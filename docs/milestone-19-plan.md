@@ -191,6 +191,10 @@ export interface DocumentStore {
   readOnly オプション。`EditorState.readOnly` + `EditorView.editable: false`)。
 - 「名前を付けて保存」でファイルへ昇格したら(core 側で kind が外れるのに合わせ)
   編集可能な EditorState へ差し替え、モード固定も解除する。
+- 追加のフィードバックで「画面操作ではプレビューのみから一切動かせない」へさらに強化。
+  表示メニュー・Ctrl+K V / Ctrl+Shift+V・タブバー右上の切り替えボタンをまとめて
+  無効化する `applyViewModeFromUser` ガードを main.ts に置き、ヘルプ表示中はボタン自体を
+  hidden にする(`docs/roadmap.md` 整理と合わせて2件フォローアップとして実施)。
 
 ## 分担の指針
 
