@@ -90,3 +90,7 @@ generated under `src-tauri/target/release/bundle/`).
 - Scroll sync pairs heading lines with the preview's heading elements in
   document order, and interpolates linearly between them. Sync granularity
   is coarser inside long blocks with few headings.
+
+## License
+
+MIT. See [LICENSE](LICENSE) for the full text.
