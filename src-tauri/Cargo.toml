@@ -1,7 +1,7 @@
 [package]
 name = "tendledge"
 version = "0.1.0"
-description = "An Obsidian-like AsciiDoc editor with live preview"
+description = "AsciiDoc editor with live preview"
 authors = ["chikaraction"]
 license = "MIT"
 edition = "2021"
