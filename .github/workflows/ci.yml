@@ -12,6 +12,11 @@ jobs:
   frontend:
     name: テストとビルド
     runs-on: ubuntu-latest
+    # チェックアウトと npm 実行しかしないため読み取りのみに絞る。
+    # 明示しないと GITHUB_TOKEN が既定の広い権限を持ち、CodeQL の
+    # actions/missing-workflow-permissions で検出される。
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
