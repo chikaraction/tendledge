@@ -1,0 +1,51 @@
+# CodeQL によるコードスキャン。
+# リポジトリ公開後にブランチ保護の「Require code scanning results」を有効にするための前提。
+#
+# 注意: このルールを必須チェックにするため、paths / paths-ignore フィルタは付けない。
+# ワークフローがスキップされると結果が上がらず、PR が「結果待ち」で永久にブロックされる。
+#
+# ci.yml と違い Rust (src-tauri) も対象にしている。CodeQL の Rust 解析は
+# build-mode: none に対応しており、Tauri の実ビルド (webkit2gtk 等) が不要なため。
+name: CodeQL
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  analyze:
+    name: 解析 (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript # src/ のフロントエンド
+            build-mode: none
+          - language: rust # src-tauri/ のネイティブ側
+            build-mode: none
+          - language: actions # ワークフロー自体の脆弱性
+            build-mode: none
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: CodeQL の初期化
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          # クエリスイートは既定 (security) のまま。security-extended は検出が増える一方で
+          # 誤検知も増え、ルールセット経由で PR がブロックされるため採用しない。
+
+      - name: CodeQL 解析の実行
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"
