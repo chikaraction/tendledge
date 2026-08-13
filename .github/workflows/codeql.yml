@@ -13,6 +13,9 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  # 定期実行 cron を置いていないぶん、手動でスキャンを回せるようにしておく
+  # (クエリパック更新への追随や、設定変更の試行に使う)。
+  workflow_dispatch:
 
 jobs:
   analyze:
