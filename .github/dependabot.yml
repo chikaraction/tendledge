@@ -1,0 +1,47 @@
+# Dependabot のバージョン更新設定。
+# セキュリティ更新はこのファイルが無くても動くため、ここで有効にしているのは
+# 通常のバージョン追随のみ。
+#
+# 個人プロジェクトで PR が increase しすぎると追いきれないため、minor と patch は
+# エコシステムごとに1本へまとめる (groups)。major は破壊的変更の確認が要るので
+# あえてまとめず、個別の PR として出させる。
+version: 2
+
+updates:
+  # フロントエンド (package.json / package-lock.json)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Tauri のネイティブ側 (src-tauri/Cargo.toml)
+  # glib のように上流が古いバージョンを固定していて更新できないものもあるが、
+  # 解決可能なものは追随させる。
+  - package-ecosystem: cargo
+    directory: /src-tauri
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      cargo-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # ワークフローが使うアクション (.github/workflows/)
+  # ci.yml と codeql.yml のバージョンが乖離するのを防ぐ。
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      actions-all:
+        patterns:
+          - "*"
