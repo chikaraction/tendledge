@@ -2,3 +2,4 @@
 # core.autocrlf の個人設定に依存しないようにし、cargo / tauri CLI が
 # Cargo.toml を LF で書き戻すたびに改行だけの差分が出る問題を防ぐ。
 * text=auto
+*.toml text eol=lf

@@ -69,7 +69,10 @@ Vite のみのブラウザプレビューでは Tauri API(fs / dialog / store)�
 
 ### シンタックスハイライト(M10)
 - [ ] sample の 03-blocks.adoc を開き、javascript/python/rust/json のコードブロックが
-      色付きで表示され、plantuml ブロックは色なしのプレーン表示のままになる
+      色付きで表示され、haskell ブロック(非対応言語の例)は色なしのプレーン表示の
+      ままになる。※ 非対応言語の例に plantuml / drawio を使ってはいけない。
+      Kroki を有効にすると図に変換され、「プレーンのまま」の確認にならなくなる
+      (対応言語は src/core/highlight-lang.ts の SUPPORTED_LANGUAGES)
 - [ ] HTML エクスポート → 生成 HTML を *ネットワークを切った状態* のブラウザで開き、
       コードブロックが色付きのまま表示される(スクリプト同梱なし・静的焼き込み)
 - [ ] Ctrl+P → 印刷プレビューのコードブロックがダークテーマ中でもライト配色になっている
@@ -84,6 +87,12 @@ Vite のみのブラウザプレビューでは Tauri API(fs / dialog / store)�
       (画面のダーク図が印刷前に一時的にライトへ描き直され、印刷後に元へ戻る)
 
 ### 作図 / Kroki(PlantUML / Draw.io)(M12)
+
+Kroki を有効にすると、専用サンプル(08 / 09)だけでなく**どの文書でも**
+`[plantuml]` / `[source,plantuml]` / `[drawio]` のコードブロックが図に変換される
+(判定は `code[data-lang="..."]` に対して行われ、文書を問わない)。この節を
+オンのまま進めると他の節の確認に影響するので、終わったらオフに戻すこと。
+
 - [ ] 設定で「PlantUML / Draw.io を有効にする」がオフ(既定)のまま
       08-diagrams-plantuml.adoc / 09-diagrams-drawio.adoc を開いてもリクエストが
       一切飛ばない(コードブロックのまま表示される)

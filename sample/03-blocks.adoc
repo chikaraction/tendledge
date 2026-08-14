@@ -38,14 +38,17 @@ fn main() {
 }
 ----
 
-対応していない言語(例: `plantuml`)や `[source]` の言語指定なしの場合は、
+対応していない言語(例: `haskell`)や `[source]` の言語指定なしの場合は、
 色付けなしのプレーンな表示になります。
 
-[source,plantuml]
+// 「非対応言語の例」には plantuml / drawio を使わないこと。
+// これらは Kroki 連携(設定で有効化)の対象言語なので、有効にすると
+// プレーンなコードブロックではなく図に変換され、上の説明と食い違う。
+// 対応言語の一覧は src/core/highlight-lang.ts の SUPPORTED_LANGUAGES を参照。
+[source,haskell]
 ----
-@startuml
-Alice -> Bob: Hello
-@enduml
+main :: IO ()
+main = putStrLn "Hello, AsciiDoc!"
 ----
 
 == リテラルブロック
