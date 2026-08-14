@@ -18,7 +18,19 @@ export interface ScrollSyncController {
   suspend(): () => void;
 }
 
-export function setupScrollSync(view: EditorView, preview: PreviewController): ScrollSyncController {
+export function setupScrollSync(
+  view: EditorView,
+  preview: PreviewController,
+  opts: {
+    /**
+     * ペインが表示されているかの判定。既定は offsetParent(display: none の
+     * 祖先を持つと null)。jsdom はレイアウトを持たず常に null になるため、
+     * テストから差し替えられるようにしている。
+     */
+    isVisible?: (el: HTMLElement) => boolean;
+  } = {},
+): ScrollSyncController {
+  const isVisible = opts.isVisible ?? ((el: HTMLElement) => el.offsetParent !== null);
   let syncingScroll = false;
   let suspendCount = 0;
 
@@ -36,7 +48,13 @@ export function setupScrollSync(view: EditorView, preview: PreviewController): S
     setTimeout(release, 100);
   }
 
+  // 表示モードで非表示になったペイン(display: none)は scrollTop が 0 に固定される。
+  // その 0 を相手へ同期すると相手が必ず先頭へ飛ぶため、見えていない側を起点にした
+  // 同期は行わない。常にプレビューのみ表示になるヘルプタブで、タブ復帰後に
+  // CodeMirror の measure(rAF)が発火させる scroll イベントがこの経路を通り、
+  // 復元済みのプレビュー位置を 0 で上書きしていた。
   view.scrollDOM.addEventListener("scroll", () => {
+    if (!isVisible(view.scrollDOM)) return;
     withScrollGuard(() => {
       const target = preview.scrollTopForLine(editorTopLine(view), view.state.doc.lines);
       preview.paneEl.scrollTop = target;
@@ -44,6 +62,7 @@ export function setupScrollSync(view: EditorView, preview: PreviewController): S
   });
 
   preview.paneEl.addEventListener("scroll", () => {
+    if (!isVisible(preview.paneEl)) return; // エディタのみ表示のとき(対称の保険)
     withScrollGuard(() => {
       const lineno = preview.lineForScrollTop(preview.paneEl.scrollTop, view.state.doc.lines);
       editorScrollToLine(view, lineno);
