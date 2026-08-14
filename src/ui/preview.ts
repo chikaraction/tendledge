@@ -131,28 +131,34 @@ export function createPreview(opts: {
     }
   }
 
-  function render(source: string): Promise<void> {
+  async function render(source: string): Promise<void> {
     const start = performance.now();
+    const generation = ++renderGeneration;
     try {
-      const generation = ++renderGeneration;
-      previewEl.innerHTML = sanitizePreviewHtml(convertToPreviewHtml(source));
+      const html = sanitizePreviewHtml(await convertToPreviewHtml(source));
+      // await の後は他の render() 呼び出しで世代が進んでいる可能性があるため、
+      // innerHTML を書き換える直前に世代を確認する(decorateDiagrams 内の
+      // 同じガードと同一のイディオム)。無いと、高速に打鍵したときに古い
+      // 変換結果が新しいプレビューを上書きしてしまう。
+      if (generation !== renderGeneration) return;
+      previewEl.innerHTML = html;
       decorateImages();
       decorateChecklists(previewEl);
       decorateAdmonitionIcons(previewEl);
       decorateCodeBlocks(previewEl);
       rebuildHeadingAnchors(source);
       // 図の完了を待ちたい呼び出し元(印刷前のテーマ差し替え)のために返す。
-      // 変換 ms のステータスは同期部分だけを計測する(図はキャッシュが効けばほぼゼロ)
+      // 変換 ms のステータスは AsciiDoc 変換(非同期)込みの実時間を計測する
+      // (図の描画はキャッシュが効けばほぼゼロ。図の完了自体は待たない)
       const diagramsDone = decorateDiagrams(source, generation);
       statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;
       statusEl.classList.remove("error");
-      return diagramsDone;
+      await diagramsDone;
     } catch (err) {
       // 変換エラーでも直前のプレビューは保持し、ステータスだけ知らせる
       statusEl.textContent = "変換エラー";
       statusEl.classList.add("error");
       console.error(err);
-      return Promise.resolve();
     }
   }
 

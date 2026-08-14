@@ -1,10 +1,8 @@
-// Asciidoctor.js による変換(プロセッサは1回だけ生成する)
-import Asciidoctor from "@asciidoctor/core";
-import type { Document } from "@asciidoctor/core";
+// Asciidoctor.js による変換
+import { convert, Extensions, load } from "@asciidoctor/core";
+import type { BlockProcessorDslInterface, Document, Registry } from "@asciidoctor/core";
 import DOMPurify from "dompurify";
 import { renderBylineHtml, type BylineInfo } from "./core/byline";
-
-const asciidoctor = Asciidoctor();
 
 // [mermaid] ブロックを [source,mermaid] と同一の出力に正規化する拡張。
 // 素の Asciidoctor では [mermaid] スタイルは HTML に痕跡を残さない
@@ -17,8 +15,8 @@ const asciidoctor = Asciidoctor();
 // 残らない)で source,<lang> に正規化する。[diagramsnet] は Kroki 側の
 // 図種別名なので、Asciidoctor Diagram の慣習である [drawio] のエイリアスとして受ける。
 function registerNormalizeBlock(name: string, language: string): void {
-  asciidoctor.Extensions.register(function () {
-    this.block(function () {
+  Extensions.register(function (this: Registry) {
+    this.block(function (this: BlockProcessorDslInterface) {
       this.named(name);
       this.onContexts("listing", "literal");
       this.parseContentAs("raw");
@@ -80,7 +78,7 @@ function extractBylineInfo(doc: Document): BylineInfo {
 
 /**
  * プレビュー用の HTML 断片に変換する。
- * asciidoctor.convert() 相当を asciidoctor.load() + doc.convert() の2段階にしているのは、
+ * convert() 相当を load() + doc.convert() の2段階にしているのは、
  * 変換後の Document から doc.getAuthors() / getRevisionNumber() 等を読み、
  * バイラインを組み立てるため(オプションは convert() 直呼びと同一 = BASE_ATTRIBUTES のみ)。
  * バイラインは showtitle 由来の先頭 <h1> の直後に挿入する。情報が空、または
@@ -88,12 +86,12 @@ function extractBylineInfo(doc: Document): BylineInfo {
  * (スクロール同期は h1〜h6 の見出しペアリングに依存するため、バイライン自体は
  * 見出しタグを使わない)。
  */
-export function convertToPreviewHtml(source: string): string {
-  const doc = asciidoctor.load(source, {
+export async function convertToPreviewHtml(source: string): Promise<string> {
+  const doc = await load(source, {
     safe: "safe",
     attributes: BASE_ATTRIBUTES,
   });
-  const html = doc.convert() as string;
+  const html = await doc.convert();
 
   const byline = renderBylineHtml(extractBylineInfo(doc));
   if (!byline) return html;
@@ -134,16 +132,14 @@ export function sanitizeMermaidSvg(svg: string): string {
  * こちらは意図的にサニタイズしない: 自分の文書のパススルーを壊さないため。
  * 出力先はプレーンな HTML ファイルで、Tauri API には触れない。
  *
- * stylesheet: false — @asciidoctor/core のブラウザビルドは既定でデフォルト CSS を
- * 同期 XHR(Opal ランタイムのポリフィル)で読み込もうとするが、Vite の dev/preview
- * サーバーは存在しないパスへの GET を index.html にフォールバックさせるため、
- * その HTML がまるごと <style> に誤って埋め込まれてしまう。この同期読み込み自体を止める
- * (どのみち ui/html-export.ts が .adoc スコープの CSS を別途埋め込むので不要)。
+ * stylesheet: false — 指定しないと Asciidoctor.js の既定 CSS が <style> として
+ * 埋め込まれる。ui/html-export.ts が .adoc スコープの CSS を別途埋め込むので、
+ * 既定 CSS は不要かつ二重管理を避けるためここで明示的に無効化する。
  */
-export function convertToStandaloneHtml(source: string): string {
-  return asciidoctor.convert(source, {
+export async function convertToStandaloneHtml(source: string): Promise<string> {
+  return (await convert(source, {
     safe: "safe",
     standalone: true,
     attributes: { ...BASE_ATTRIBUTES, stylesheet: false },
-  }) as string;
+  })) as string;
 }
