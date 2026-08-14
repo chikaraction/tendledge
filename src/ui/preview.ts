@@ -155,10 +155,15 @@ export function createPreview(opts: {
       statusEl.classList.remove("error");
       await diagramsDone;
     } catch (err) {
-      // 変換エラーでも直前のプレビューは保持し、ステータスだけ知らせる
+      // 変換エラーでも直前のプレビューは保持し、ステータスだけ知らせる。
+      // 変換が非同期になったことで、古い世代の失敗が新しい世代の成功より
+      // 後に届きうる(打鍵の途中で失敗する内容を経由した場合)。その場合に
+      // 成功済みの "N ms" を「変換エラー」で上書きしないよう、ここでも
+      // innerHTML 代入前と同じ世代ガードを掛ける。
+      console.error(err);
+      if (generation !== renderGeneration) return;
       statusEl.textContent = "変換エラー";
       statusEl.classList.add("error");
-      console.error(err);
     }
   }
 
