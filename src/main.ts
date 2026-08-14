@@ -210,14 +210,17 @@ function switchEditorTo(id: number, previousId?: number): void {
   view.focus();
   const scroll = tabScrollTops.get(id);
   view.scrollDOM.scrollTop = scroll?.editor ?? 0;
-  // render() の innerHTML 差し替え自体は同期実行される(mermaid/Kroki の非同期完了を
-  // 待つ必要があるのは decorateDiagrams だけ)。呼び出し直後に scrollTop を復元すれば、
-  // 新しいタブのアンカーに対して正しい位置が決まる。.then() まで待つと、素早い連続切替
-  // (A→B→C)で後発の解決が先発を追い越し、表示中のタブに別タブの位置を適用してしまう
-  // 競合があったため、同期復元を主経路にした。
+  // scrollTop の復元は「変換結果が innerHTML に入った直後」に行う。@asciidoctor/core 4 で
+  // 変換が非同期になったため、render() の呼び出し直後はまだ前のタブの内容が残っており、
+  // そこで復元しても差し替えで消える(v3 では同期だったので直後の復元が主経路だった)。
+  // 一方 .then() まで待つのは遅すぎる: 戻り値は図(mermaid/Kroki)の完了で解決するため、
+  // 図を含む文書ではその間ずっと位置がずれたままになる(ヘルプ文書で実際に発生した)。
+  // onHtmlReady は世代が古い変換では呼ばれないので、素早い連続切替(A→B→C)で
+  // 別タブの位置を適用してしまう競合も起きない。
   const generation = ++scrollRestoreGeneration;
-  const renderDone = preview.render(view.state.doc.toString());
-  preview.paneEl.scrollTop = scroll?.preview ?? 0;
+  const renderDone = preview.render(view.state.doc.toString(), () => {
+    preview.paneEl.scrollTop = scroll?.preview ?? 0;
+  });
   // 図の非同期完了でアンカーが再構築され、prewview の scrollTop がずれる可能性が
   // あるための後始末。ただし自分より新しい切替が既に走っていたら(generation不一致)
   // その切替のプレビューを上書きしないよう再適用はスキップする。スクロール同期の
