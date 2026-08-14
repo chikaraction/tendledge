@@ -13,7 +13,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@asciidoctor/core": "^3.0.4",
+    "@asciidoctor/core": "^4.0.8",
     "@codemirror/commands": "^6.6.0",
     "@codemirror/language": "^6.10.0",
     "@codemirror/search": "^6.7.1",

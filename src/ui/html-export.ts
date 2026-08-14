@@ -40,7 +40,7 @@ export async function buildExportHtml(
   source: string,
   kroki?: { enabled: boolean; serverUrl: string },
 ): Promise<string> {
-  const html = convertToStandaloneHtml(source);
+  const html = await convertToStandaloneHtml(source);
   const doc = new DOMParser().parseFromString(html, "text/html");
 
   decorateAdmonitionIcons(doc);

@@ -15,8 +15,16 @@ import { renderMermaidBlocks } from "./mermaid";
 import { convertToPreviewHtml, sanitizePreviewHtml } from "../render";
 
 export interface PreviewController {
-  /** 即時に変換・描画する。mermaid 図の非同期描画まで含めて完了で解決する */
-  render(source: string): Promise<void>;
+  /**
+   * 即時に変換・描画する。mermaid 図の非同期描画まで含めて完了で解決する。
+   *
+   * onHtmlReady は、変換結果が innerHTML に入って装飾とアンカー再構築まで
+   * 終わった時点で(図の完了を待たずに)呼ばれる。呼び出し元がプレビューの
+   * scrollTop を確定させたいのはこの瞬間で、図の完了を待つ戻り値の Promise
+   * では遅すぎる(図を含む文書では数秒待たされる)。世代が古くなった変換では
+   * 呼ばれない。
+   */
+  render(source: string, onHtmlReady?: () => void): Promise<void>;
   /** デバウンス付きで変換を予約する(入力中用) */
   scheduleRender(source: string): void;
   /** エディタの行番号に対応するプレビューの scrollTop を返す */
@@ -131,28 +139,43 @@ export function createPreview(opts: {
     }
   }
 
-  function render(source: string): Promise<void> {
+  async function render(source: string, onHtmlReady?: () => void): Promise<void> {
     const start = performance.now();
+    const generation = ++renderGeneration;
     try {
-      const generation = ++renderGeneration;
-      previewEl.innerHTML = sanitizePreviewHtml(convertToPreviewHtml(source));
+      const html = sanitizePreviewHtml(await convertToPreviewHtml(source));
+      // await の後は他の render() 呼び出しで世代が進んでいる可能性があるため、
+      // innerHTML を書き換える直前に世代を確認する(decorateDiagrams 内の
+      // 同じガードと同一のイディオム)。無いと、高速に打鍵したときに古い
+      // 変換結果が新しいプレビューを上書きしてしまう。
+      if (generation !== renderGeneration) return;
+      previewEl.innerHTML = html;
       decorateImages();
       decorateChecklists(previewEl);
       decorateAdmonitionIcons(previewEl);
       decorateCodeBlocks(previewEl);
       rebuildHeadingAnchors(source);
+      // ここまでで HTML は DOM に入り、見出しアンカーも新しい内容のものになっている。
+      // タブ切替のスクロール位置復元はこの時点で行う必要がある(図の完了を待つ
+      // 戻り値では、図を含む文書で数秒間ずれたままになる)。
+      onHtmlReady?.();
       // 図の完了を待ちたい呼び出し元(印刷前のテーマ差し替え)のために返す。
-      // 変換 ms のステータスは同期部分だけを計測する(図はキャッシュが効けばほぼゼロ)
+      // 変換 ms のステータスは AsciiDoc 変換(非同期)込みの実時間を計測する
+      // (図の描画はキャッシュが効けばほぼゼロ。図の完了自体は待たない)
       const diagramsDone = decorateDiagrams(source, generation);
       statusEl.textContent = `${(performance.now() - start).toFixed(0)} ms`;
       statusEl.classList.remove("error");
-      return diagramsDone;
+      await diagramsDone;
     } catch (err) {
-      // 変換エラーでも直前のプレビューは保持し、ステータスだけ知らせる
+      // 変換エラーでも直前のプレビューは保持し、ステータスだけ知らせる。
+      // 変換が非同期になったことで、古い世代の失敗が新しい世代の成功より
+      // 後に届きうる(打鍵の途中で失敗する内容を経由した場合)。その場合に
+      // 成功済みの "N ms" を「変換エラー」で上書きしないよう、ここでも
+      // innerHTML 代入前と同じ世代ガードを掛ける。
+      console.error(err);
+      if (generation !== renderGeneration) return;
       statusEl.textContent = "変換エラー";
       statusEl.classList.add("error");
-      console.error(err);
-      return Promise.resolve();
     }
   }
 

@@ -6,51 +6,68 @@ import { convertToPreviewHtml, sanitizeMermaidSvg, sanitizePreviewHtml } from ".
 // AsciiDoc のパススルーブロック(++++)は safe: "safe" でも生 HTML を素通しするので、
 // DOMPurify によるサニタイズが唯一の防壁になる。
 describe("sanitizePreviewHtml: プレビュー HTML のサニタイズ", () => {
-  it("パススルーブロック内の script タグを除去する", () => {
+  it("パススルーブロック内の script タグを除去する", async () => {
     const source = ["= 悪意ある文書", "", "++++", "<script>window.pwned = true</script>", "++++"].join(
       "\n",
     );
-    const html = convertToPreviewHtml(source);
+    const html = await convertToPreviewHtml(source);
     expect(html).toContain("<script>"); // Asciidoctor は素通しする(前提の確認)
     expect(sanitizePreviewHtml(html)).not.toContain("<script>");
   });
 
-  it("インラインイベントハンドラ(onerror 等)を除去する", () => {
+  it("インラインイベントハンドラ(onerror 等)を除去する", async () => {
     const source = ["++++", '<img src="x" onerror="window.pwned = true">', "++++"].join("\n");
-    const sanitized = sanitizePreviewHtml(convertToPreviewHtml(source));
+    const sanitized = sanitizePreviewHtml(await convertToPreviewHtml(source));
     expect(sanitized).not.toContain("onerror");
   });
 
-  it("javascript: スキームのリンクを無害化する", () => {
+  it("javascript: スキームのリンクを無害化する", async () => {
     const source = ["++++", '<a href="javascript:alert(1)">click</a>', "++++"].join("\n");
-    const sanitized = sanitizePreviewHtml(convertToPreviewHtml(source));
+    const sanitized = sanitizePreviewHtml(await convertToPreviewHtml(source));
     expect(sanitized).not.toContain("javascript:");
   });
 
-  it("通常の AsciiDoc 出力(見出し・強調・表)はそのまま通す", () => {
+  it("通常の AsciiDoc 出力(見出し・強調・表)はそのまま通す", async () => {
     const source = ["= タイトル", "", "== 見出し", "", "*太字* です。", "", "|===", "| A | B", "|==="].join(
       "\n",
     );
-    const html = convertToPreviewHtml(source);
+    const html = await convertToPreviewHtml(source);
     const sanitized = sanitizePreviewHtml(html);
     expect(sanitized).toContain("<h1>");
     expect(sanitized).toContain("<strong>");
     expect(sanitized).toContain("<table");
   });
 
-  it("パススルーの安全な HTML(kbd タグ等)は残す", () => {
+  it("パススルーの安全な HTML(kbd タグ等)は残す", async () => {
     const source = ["++++", "<kbd>Ctrl</kbd>+<kbd>S</kbd>", "++++"].join("\n");
-    const sanitized = sanitizePreviewHtml(convertToPreviewHtml(source));
+    const sanitized = sanitizePreviewHtml(await convertToPreviewHtml(source));
     expect(sanitized).toContain("<kbd>");
   });
 
   // シンタックスハイライト(ui/code-highlight.ts)は data-lang とコードブロックの
   // class 属性を頼りに動くため、DOMPurify がこれらを落とさないことを固定する
-  it("コードブロックの class・data-lang 属性は保持する(シンタックスハイライトの前提)", () => {
+  it("コードブロックの class・data-lang 属性は保持する(シンタックスハイライトの前提)", async () => {
     const source = ["[source,javascript]", "----", "const x = 1;", "----"].join("\n");
-    const sanitized = sanitizePreviewHtml(convertToPreviewHtml(source));
+    const sanitized = sanitizePreviewHtml(await convertToPreviewHtml(source));
     expect(sanitized).toContain('class="highlight"');
     expect(sanitized).toContain('data-lang="javascript"');
+  });
+
+  // @asciidoctor/core 4 では表の列幅指定が <col style="width: 50%;"> から
+  // <col width="50%"> という非推奨の属性形式に変わった(docs/asciidoctor-4-migration.md
+  // の「未確認事項」)。DOMPurify が width 属性を落とすとプレビューで列幅が失われるため、
+  // 通過することをここで固定する。
+  it("表の列幅指定(<col width=\"50%\">)を保持する", async () => {
+    const source = [
+      '[cols="50%,50%"]',
+      "|===",
+      "| A | B",
+      "|===",
+    ].join("\n");
+    const html = await convertToPreviewHtml(source);
+    expect(html).toContain('<col width="50%"');
+    const sanitized = sanitizePreviewHtml(html);
+    expect(sanitized).toContain('<col width="50%"');
   });
 });
 

@@ -4,8 +4,8 @@
 // から BylineInfo を組み立てる。
 //
 // マークアップ構造は推測せず、node_modules/@asciidoctor/core の Html5Converter
-// (dist/node/asciidoctor.js の convertDocument、$header?() 配下、~L14277-14301)を
-// 読んで確認し、実際に asciidoctor.convert(source, {standalone: true}) を掛けて
+// (src/converter/html5.js の convert_document、~L280-315 の details 組み立て箇所)を
+// 読んで確認し、実際に convert(source, {standalone: true}) を掛けて
 // 出力を突き合わせた(著者1人/複数/email あり・なし/リビジョン行/著者なし文書、
 // 各パターンで実測)。要点:
 // - 著者2人目以降の id は "author2" / "email2"("author_2" のようなアンダースコア連番ではない)。
