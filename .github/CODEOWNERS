@@ -1,0 +1,27 @@
+# 変更がそのまま CI・開発機・配布するアプリの動きに効くファイルの持ち主。
+# ここに挙げたパスを変える PR には、持ち主へのレビュー依頼が自動で付く
+# (外部からの PR や Dependabot の PR に紛れた変更を見落としにくくする)。
+#
+# ルールセットで「コードオーナーのレビュー必須」にはしていない。1人で開発していて
+# 自分の PR は自分で承認できないので、必須にすると自分の PR をマージできなくなる。
+
+# CI とリポジトリの自動化
+/.github/ @chikaraction
+
+# Claude Code の設定とスキル(開発機でコマンドが動く)
+/.claude/ @chikaraction
+
+# フロントエンドの依存とビルド設定
+/package.json @chikaraction
+/package-lock.json @chikaraction
+/vite.config.ts @chikaraction
+/index.html @chikaraction
+
+# Tauri のネイティブ側(依存・権限 capabilities・CSP・Rust コード)
+/src-tauri/ @chikaraction
+
+# プレビューの XSS 対策(DOMPurify によるサニタイズ)
+/src/render.ts @chikaraction
+
+# 対外的なセキュリティの説明
+/SECURITY.md @chikaraction
