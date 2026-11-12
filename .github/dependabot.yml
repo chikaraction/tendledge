@@ -2,9 +2,14 @@
 # セキュリティ更新はこのファイルが無くても動くため、ここで有効にしているのは
 # 通常のバージョン追随のみ。
 #
-# 個人プロジェクトで PR が increase しすぎると追いきれないため、minor と patch は
+# 個人プロジェクトで PR が増えすぎると追いきれないため、minor と patch は
 # エコシステムごとに1本へまとめる (groups)。major は破壊的変更の確認が要るので
 # あえてまとめず、個別の PR として出させる。
+#
+# 公開されたばかりの版はすぐには取り込まない (cooldown)。乗っ取られたパッケージの
+# 悪性版は、たいてい数日のうちに見つかって取り下げられる。マージした依存は開発機の
+# ビルドや配布するアプリに入るので、公開から 7 日たった版だけを PR にする。
+# cooldown はバージョン更新だけに効き、セキュリティ更新は待たずに出る。
 version: 2
 
 updates:
@@ -14,6 +19,8 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
     groups:
       npm-minor-patch:
         update-types:
@@ -28,6 +35,8 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
     groups:
       cargo-minor-patch:
         update-types:
@@ -41,6 +50,8 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
     groups:
       actions-all:
         patterns:
